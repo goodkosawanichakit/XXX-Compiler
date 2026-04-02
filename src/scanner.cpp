@@ -1,23 +1,23 @@
 #include "scanner.hpp"
 
-typedef struct {
-  const char *start;
-  const char *current;
-  int line;
-} Scanner;
+static compiler::Scanner scanner;
 
-Scanner scanner;
+bool compiler::Scanner::isAtEnd() { return current >= source.length(); }
 
-static bool isAtEnd() { return *scanner.current == '\0'; }
-
-static void initScanner(const char *source) {
-  scanner.start = source;
-  scanner.current = source;
+void compiler::Scanner::initScanner(const std::string &source) {
+  scanner.source = source;
+  scanner.start = 0;
+  scanner.current = 0;
   scanner.line = 1;
 }
 
-compiler::Token scanToken() {
+compiler::Token compiler::Scanner::scanToken() {
   scanner.start = scanner.current;
-  while (!isAtEnd()) {
-  }
+
+  if (isAtEnd())
+    return Token{TokenType::TOKEN_EOF, "", line};
+
+  // TODO: complete the scanToken() function
+
+  return Token{TokenType::TOKEN_EOF, "", line};
 }

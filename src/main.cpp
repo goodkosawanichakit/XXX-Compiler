@@ -1,14 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <fstream>
+#include <iostream>
+#include <string>
 
-int main(int argc, char *argv[]) {
-  FILE *fptr;
-  char temp[1024];
+int main() {
+  std::ifstream file("test");
+  std::string line;
 
-  fptr = fopen("test", "r");
-
-  while (fgets(temp, 1024, fptr))
-    printf("%s", temp);
+  while (std::getline(file, line))
+    std::cout << line << '\n';
 
   return 0;
 }

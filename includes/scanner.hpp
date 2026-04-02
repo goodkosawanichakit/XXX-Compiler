@@ -51,4 +51,18 @@ struct Token {
   int line;
 };
 
+class Scanner {
+private:
+  std::string source;
+  size_t start = 0;
+  size_t current = 0;
+  int line = 1;
+
+  bool isAtEnd();
+
+public:
+  void initScanner(const std::string &source);
+  Token scanToken();
+};
+
 } // namespace compiler

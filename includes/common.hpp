@@ -1,6 +1,3 @@
-#ifndef COMMON_H
-#define COMMON_H
-#include <stdbool.h>
-#include <stdint.h>
+#pragma once
+#include <cstdint>
 #include <string>
-#endif //! COMMON_H
