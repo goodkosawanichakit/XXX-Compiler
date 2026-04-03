@@ -10,6 +10,13 @@ enum class TokenType {
   MINUS,
   STAR,
   SLASH,
+  SEMICOLON,
+  COLON,
+  LEFT_PAREN,
+  RIGHT_PAREN,
+  LEFT_BRACE,
+  RIGHT_BRACE,
+  DOT,
 
   // Two-character tokens
   DOT_DOT,
@@ -59,9 +66,12 @@ private:
   int line = 1;
 
   bool isAtEnd();
+  bool match(char c);
+  char advance();
+  char peek();
 
 public:
-  void initScanner(const std::string &source);
+  Scanner(const std::string &source);
   Token scanToken();
 };
 
