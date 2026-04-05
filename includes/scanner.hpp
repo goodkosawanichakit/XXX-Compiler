@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace compiler {
+namespace XX {
 
 enum class TokenType {
   // Single-character tokens
@@ -69,6 +69,7 @@ private:
   bool match(char c);
   char advance();
   char peek();
+  void skipWhitespace();
 
 public:
   Scanner(const std::string &source);

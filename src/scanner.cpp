@@ -1,10 +1,10 @@
 #include "scanner.hpp"
 
-compiler::Scanner::Scanner(const std::string &source) : source(source) {}
+XX::Scanner::Scanner(const std::string &source) : source(source) {}
 
-bool compiler::Scanner::isAtEnd() { return current >= source.length(); }
+bool XX::Scanner::isAtEnd() { return current >= source.length(); }
 
-bool compiler::Scanner::match(char c) {
+bool XX::Scanner::match(char c) {
   if (isAtEnd())
     return false;
   if (source[current] != c)
@@ -13,14 +13,33 @@ bool compiler::Scanner::match(char c) {
   return true;
 }
 
-char compiler::Scanner::advance() { return source[current++]; }
+char XX::Scanner::advance() { return source[current++]; }
 
-char compiler::Scanner::peek() { return source[current]; }
+char XX::Scanner::peek() {
+  if (isAtEnd())
+    return '\0';
+  return source[current];
+}
 
-compiler::Token compiler::Scanner::scanToken() {
+void XX::Scanner::skipWhitespace() {
+  while (!isAtEnd())
+    switch (peek()) {
+    case ' ':
+    case '\t':
+    case '\r':
+      advance();
+      break;
+    case '\n':
+      line++;
+      advance();
+      break;
+    default:
+      return;
+    }
+}
 
-  // TODO: complete the scanToken() function
-  // - implement Basic Keyword, Integer Literal
+XX::Token XX::Scanner::scanToken() {
+  skipWhitespace();
 
   if (isAtEnd())
     return Token{TokenType::TOKEN_EOF, "", line};
