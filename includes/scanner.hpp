@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 namespace XX {
 
@@ -49,11 +50,14 @@ enum class TokenType {
   KW_TRUE,
   KW_FALSE,
 
+  ERROR,
   TOKEN_EOF
 };
 
 struct Token {
   TokenType type;
+  // TODO: Change string to String_view to avoid unnecessary allocation
+  // Technical Debt my ass
   std::string lexeme;
   int line;
 };
@@ -64,6 +68,7 @@ private:
   size_t start = 0;
   size_t current = 0;
   int line = 1;
+  static std::unordered_map<std::string, TokenType> reserve_word;
 
   bool isAtEnd();
   bool match(char c);
@@ -73,6 +78,7 @@ private:
   void skipWhitespace();
   Token digit();
   Token string();
+  Token identifier();
 
 public:
   Scanner(const std::string &source);

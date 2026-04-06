@@ -1,4 +1,13 @@
 #include "scanner.hpp"
+#include <cctype>
+
+std::unordered_map<std::string, XX::TokenType> XX::Scanner::reserve_word = {
+    {"int", XX::TokenType::KW_INT},   {"float", XX::TokenType::KW_FLOAT},
+    {"bool", XX::TokenType::KW_BOOL}, {"if", XX::TokenType::KW_IF},
+    {"else", XX::TokenType::KW_ELSE}, {"loop", XX::TokenType::KW_LOOP},
+    {"in", XX::TokenType::KW_IN},     {"step", XX::TokenType::KW_STEP},
+    {"fn", XX::TokenType::KW_FN},     {"return", XX::TokenType::KW_RETURN},
+    {"true", XX::TokenType::KW_TRUE}, {"false", XX::TokenType::KW_FALSE}};
 
 XX::Scanner::Scanner(const std::string &source) : source(source) {}
 
@@ -22,7 +31,7 @@ char XX::Scanner::peek() {
 }
 
 char XX::Scanner::peekNext() {
-  if (isAtEnd())
+  if (current + 1 >= source.length())
     return '\0';
   return source[current + 1];
 }
@@ -47,10 +56,10 @@ void XX::Scanner::skipWhitespace() {
 XX::Token XX::Scanner::string() {
   while (peek() != '"' && !isAtEnd())
     advance();
-  if (isAtEnd()) {
-    // TODO : I've no idea what I should return, so yeah maybe one day I'll
-    // know.
-  }
+
+  if (isAtEnd())
+    return Token{TokenType::ERROR, "Unterminated string.", line};
+
   advance();
   return Token{TokenType::STRING, source.substr(start + 1, current - start - 2),
                line};
@@ -64,7 +73,9 @@ XX::Token XX::Scanner::digit() {
 
   if (peek() == '.' && isdigit(peekNext())) {
     is_float = true;
+
     advance();
+
     while (isdigit(peek()) && !isAtEnd())
       advance();
   }
@@ -73,6 +84,20 @@ XX::Token XX::Scanner::digit() {
                             source.substr(start, current - start), line}
                     : Token{TokenType::NUMBER_INT,
                             source.substr(start, current - start), line};
+}
+
+XX::Token XX::Scanner::identifier() {
+  while (std::isalnum(peek()) || peek() == '_')
+    advance();
+
+  std::string lexeme = source.substr(start, current - start);
+  auto it = reserve_word.find(lexeme);
+
+  if (it != reserve_word.end()) {
+    return Token{it->second, lexeme, line};
+  } else {
+    return Token{TokenType::IDENTIFIER, lexeme, line};
+  }
 }
 
 XX::Token XX::Scanner::scanToken() {
@@ -129,8 +154,12 @@ XX::Token XX::Scanner::scanToken() {
   case '"':
     return string();
   default:
-    if (isdigit(c))
+    if (std::isdigit(c))
       return digit();
+    else if (std::isalpha(c) || c == '_') {
+      return identifier();
+    }
+    return Token{TokenType::ERROR, "Unexpected character.", line};
   }
 
   return Token{TokenType::TOKEN_EOF, "", line};
