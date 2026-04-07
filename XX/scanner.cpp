@@ -58,6 +58,8 @@ inline void XX::Scanner::comment() {
     advance();
 }
 
+// TODO: return TekenType::ERROR when block comment is unterminated
+// mcomment() is void, needs signature change to bool or Token
 void XX::Scanner::mcomment() {
   int count = 1;
   while (!isAtEnd()) {
@@ -145,10 +147,13 @@ XX::Token XX::Scanner::scanToken() {
   case '*':
     return Token{TokenType::STAR, "*", line};
   case '/':
-    if (match('/'))
+    if (match('/')) {
       comment();
-    else if (match('*'))
+      return scanToken();
+    } else if (match('*')) {
       mcomment();
+      return scanToken();
+    }
     return Token{TokenType::SLASH, "/", line};
   case '(':
     return Token{TokenType::LEFT_PAREN, "(", line};
