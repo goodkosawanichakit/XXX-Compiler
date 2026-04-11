@@ -13,22 +13,34 @@ enum class TokenType {
   SLASH,
   SEMICOLON,
   COLON,
+  COMMA,
   LEFT_PAREN,
   RIGHT_PAREN,
   LEFT_BRACE,
   RIGHT_BRACE,
+  LEFT_BRACKET,
+  RIGHT_BRACKET,
   DOT,
+  EQUAL,
+  GREATER,
+  LESS,
+
+  // LOGICAL
+  AND_AND,
+  OR_OR,
+  NOT,
 
   // Two-character tokens
+  PLUS_EQUAL,
+  MINUS_EQUAL,
+  SLASH_EQUAL,
+  STAR_EQUAL,
   DOT_DOT,
-  NOT,
   NOT_EQUAL,
-  EQUAL,
   EQUAL_EQUAL,
-  GREATER,
   GREATER_EQUAL,
-  LESS,
   LESS_EQUAL,
+  RETURN_TYPE,
 
   // Literals
   IDENTIFIER,
@@ -43,8 +55,6 @@ enum class TokenType {
   KW_IF,
   KW_ELSE,
   KW_LOOP,
-  KW_IN,
-  KW_STEP,
   KW_FN,
   KW_RETURN,
   KW_TRUE,
@@ -77,7 +87,7 @@ private:
   char peekNext();
   void skipWhitespace();
   void comment();
-  void mcomment();
+  bool mcomment();
   Token digit();
   Token string();
   Token identifier();

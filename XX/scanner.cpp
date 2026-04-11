@@ -4,8 +4,7 @@
 std::unordered_map<std::string, XX::TokenType> XX::Scanner::reserve_word = {
     {"int", XX::TokenType::KW_INT},   {"float", XX::TokenType::KW_FLOAT},
     {"bool", XX::TokenType::KW_BOOL}, {"if", XX::TokenType::KW_IF},
-    {"else", XX::TokenType::KW_ELSE}, {"for", XX::TokenType::KW_LOOP},
-    {"in", XX::TokenType::KW_IN},     {"step", XX::TokenType::KW_STEP},
+    {"else", XX::TokenType::KW_ELSE}, {"loop", XX::TokenType::KW_LOOP},
     {"fn", XX::TokenType::KW_FN},     {"return", XX::TokenType::KW_RETURN},
     {"true", XX::TokenType::KW_TRUE}, {"false", XX::TokenType::KW_FALSE}};
 
@@ -58,9 +57,7 @@ inline void XX::Scanner::comment() {
     advance();
 }
 
-// TODO: return TekenType::ERROR when block comment is unterminated
-// mcomment() is void, needs signature change to bool or Token
-void XX::Scanner::mcomment() {
+bool XX::Scanner::mcomment() {
   int count = 1;
   while (!isAtEnd()) {
     char c = advance();
@@ -78,8 +75,9 @@ void XX::Scanner::mcomment() {
       break;
     }
     if (count == 0)
-      return;
+      return true;
   }
+  return false;
 }
 
 XX::Token XX::Scanner::string() {
@@ -141,18 +139,29 @@ XX::Token XX::Scanner::scanToken() {
 
   switch (c) {
   case '+':
+    if (match('='))
+      return Token{TokenType::PLUS_EQUAL, "+=", line};
     return Token{TokenType::PLUS, "+", line};
   case '-':
+    if (match('='))
+      return Token{TokenType::MINUS_EQUAL, "-=", line};
+    if (match('>'))
+      return Token{TokenType::RETURN_TYPE, "->", line};
     return Token{TokenType::MINUS, "-", line};
   case '*':
+    if (match('='))
+      return Token{TokenType::STAR_EQUAL, "*=", line};
     return Token{TokenType::STAR, "*", line};
   case '/':
     if (match('/')) {
       comment();
       return scanToken();
     } else if (match('*')) {
-      mcomment();
+      if (!mcomment())
+        return Token{TokenType::ERROR, "Comment is unterminated", line};
       return scanToken();
+    } else if (match('=')) {
+      return Token{TokenType::SLASH_EQUAL, "/=", line};
     }
     return Token{TokenType::SLASH, "/", line};
   case '(':
@@ -163,6 +172,12 @@ XX::Token XX::Scanner::scanToken() {
     return Token{TokenType::LEFT_BRACE, "{", line};
   case '}':
     return Token{TokenType::RIGHT_BRACE, "}", line};
+  case '[':
+    return Token{TokenType::LEFT_BRACKET, "[", line};
+  case ']':
+    return Token{TokenType::RIGHT_BRACE, "]", line};
+  case ',':
+    return Token{TokenType::COMMA, ",", line};
   case ';':
     return Token{TokenType::SEMICOLON, ";", line};
   case ':':
@@ -187,6 +202,14 @@ XX::Token XX::Scanner::scanToken() {
     if (match('='))
       return Token{TokenType::GREATER_EQUAL, ">=", line};
     return Token{TokenType::GREATER, ">", line};
+  case '&':
+    if (!match('&'))
+      return Token{TokenType::ERROR, "Expected '&&'", line};
+    return Token{TokenType::AND_AND, "&&", line};
+  case '|':
+    if (!match('|'))
+      return Token{TokenType::ERROR, "Expected '||'", line};
+    return Token{TokenType::OR_OR, "||", line};
   case '"':
     return string();
   default:
