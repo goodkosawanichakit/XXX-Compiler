@@ -1,6 +1,6 @@
 #include "scanner.hpp"
 
-std::unordered_map<std::string, XX::TokenType> XX::Scanner::reserve_word = {
+std::unordered_map<std::string, XX::TokenType> XX::Scanner::reserve_words = {
     {"int", XX::TokenType::KW_INT},   {"float", XX::TokenType::KW_FLOAT},
     {"bool", XX::TokenType::KW_BOOL}, {"if", XX::TokenType::KW_IF},
     {"else", XX::TokenType::KW_ELSE}, {"loop", XX::TokenType::KW_LOOP},
@@ -56,7 +56,7 @@ inline void XX::Scanner::comment() {
     advance();
 }
 
-bool XX::Scanner::mcomment() {
+bool XX::Scanner::multiLineComment() {
   int count = 1;
   while (!isAtEnd()) {
     char c = advance();
@@ -117,9 +117,9 @@ XX::Token XX::Scanner::identifier() {
     advance();
 
   std::string lexeme = source.substr(start, current - start);
-  auto it = reserve_word.find(lexeme);
+  auto it = reserve_words.find(lexeme);
 
-  if (it != reserve_word.end()) {
+  if (it != reserve_words.end()) {
     return Token{it->second, lexeme, line};
   } else {
     return Token{TokenType::IDENTIFIER, lexeme, line};
@@ -156,7 +156,7 @@ XX::Token XX::Scanner::scanToken() {
       comment();
       return scanToken();
     } else if (match('*')) {
-      if (!mcomment())
+      if (!multiLineComment())
         return Token{TokenType::ERROR, "Comment is unterminated", line};
       return scanToken();
     } else if (match('=')) {

@@ -78,7 +78,7 @@ private:
   size_t start = 0;
   size_t current = 0;
   int line = 1;
-  static std::unordered_map<std::string, TokenType> reserve_word;
+  static std::unordered_map<std::string, TokenType> reserve_words;
 
   bool isAtEnd();
   bool match(char c);
@@ -87,7 +87,7 @@ private:
   char peekNext();
   void skipWhitespace();
   void comment();
-  bool mcomment();
+  bool multiLineComment();
   Token digit();
   Token string();
   Token identifier();
