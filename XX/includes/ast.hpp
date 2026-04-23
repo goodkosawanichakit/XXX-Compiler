@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 namespace XX::AST {
 
 enum class Kind {
@@ -6,7 +7,17 @@ enum class Kind {
   BINARY_EXPR,
   INT_LITERAL,
   FLOAT_LITERAL,
-  LITERAL_EXPR,
+};
+
+enum class Type {
+  INT8,
+  INT16,
+  INT32,
+  INT64,
+  FLOAT8,
+  FLOAT16,
+  FLOAT32,
+  FLOAT64
 };
 
 class Node {
@@ -43,6 +54,38 @@ public:
 
   BinaryExpr(int l, int c, char op, Expr *lexpr, Expr *rexpr)
       : Expr(Kind::BINARY_EXPR, l, c), op(op), LExpr(lexpr), RExpr(rexpr) {}
+
+  ~BinaryExpr() {}
+};
+
+class IntLiteral : public Expr {
+private:
+  Type type;
+  int64_t value;
+
+public:
+  inline Type getType() { return type; }
+  inline int64_t getValue() { return value; }
+
+  IntLiteral(int l, int c, Type t, int64_t v)
+      : Expr(Kind::INT_LITERAL, l, c), type(t), value(v) {}
+
+  ~IntLiteral() {}
+};
+
+class FloatLiteral : public Expr {
+private:
+  Type type;
+  double value;
+
+public:
+  inline Type getType() { return type; }
+  inline double getValue() { return value; }
+
+  FloatLiteral(int l, int c, Type t, double v)
+      : Expr(Kind::FLOAT_LITERAL, l, c), type(t), value(v) {}
+
+  ~FloatLiteral() {}
 };
 
 } // namespace XX::AST
