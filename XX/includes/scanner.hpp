@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace XX {
 
@@ -49,8 +51,16 @@ enum class TokenType {
   NUMBER_FLOAT,
 
   // Keywords
-  KW_INT,
-  KW_FLOAT,
+  KW_INT8,
+  KW_INT16,
+  KW_INT32,
+  KW_INT64,
+  KW_FLOAT8,
+  KW_FLOAT16,
+  KW_FLOAT32,
+  KW_FLOAT64,
+  KW_CHAR,
+  KW_STRING,
   KW_BOOL,
   KW_IF,
   KW_ELSE,
@@ -64,12 +74,14 @@ enum class TokenType {
   TOKEN_EOF
 };
 
+enum class Error {
+
+};
+
 struct Token {
   TokenType type;
-  // TODO: Change string to String_view to avoid unnecessary allocation
-  // Technical Debt my ass
-  std::string lexeme;
-  int line;
+  uint32_t offset;
+  uint16_t length;
 };
 
 class Scanner {
@@ -77,7 +89,9 @@ private:
   const std::string &source;
   size_t start = 0;
   size_t current = 0;
-  int line = 1;
+  size_t line = 1;
+  std::vector<size_t> lineOffset;
+  std::vector<Error> error_;
   static std::unordered_map<std::string, TokenType> reserve_words;
 
   bool isAtEnd();

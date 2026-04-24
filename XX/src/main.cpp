@@ -1,55 +1,31 @@
 #include "scanner.hpp"
+#include <filesystem>
+#include <fstream>
 #include <iostream>
-#include <string>
-#include <vector>
 
-int tests_passed = 0;
-int tests_failed = 0;
+int main(int argc, char *argv[]) {
+  if (argc < 2)
+    return 1;
 
-void testScanner(const std::string &test_name, const std::string &source,
-                 const std::vector<XX::TokenType> &expected_tokens) {
+  std::ifstream file(argv[1]);
+
+  if (!file)
+    return 2;
+
+  std::string source;
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  source = buffer.str();
+
   XX::Scanner scanner(source);
+  for (;;) {
+    XX::Token t = scanner.scanToken();
+    std::cout << "Type: " << (int)t.type << " | Offset: " << t.offset
+              << " | Length: " << t.length;
+    std::cout << " | Lexeme: [" << source.substr(t.offset, t.length) << "]\n";
 
-  for (size_t i = 0; i < expected_tokens.size(); ++i) {
-    XX::Token token = scanner.scanToken();
-
-    if (token.type != expected_tokens[i]) {
-      std::cout << "[FAILED] " << test_name << " at token index " << i << "\n";
-      std::cout << "  Expected type: " << static_cast<int>(expected_tokens[i])
-                << ", Got: " << static_cast<int>(token.type) << " (Lexeme: '"
-                << token.lexeme << "')\n";
-      tests_failed++;
-      return;
-    }
+    if (t.type == XX::TokenType::TOKEN_EOF)
+      break;
   }
-
-  XX::Token eof_token = scanner.scanToken();
-  if (eof_token.type != XX::TokenType::TOKEN_EOF) {
-    std::cout << "[FAILED] " << test_name << " did not end with TOKEN_EOF.\n";
-    tests_failed++;
-    return;
-  }
-
-  std::cout << "[OK] " << test_name << "\n";
-  tests_passed++;
-}
-
-int main() {
-  testScanner("Math Operators", "1 + 2.5 * 3",
-              {XX::TokenType::NUMBER_INT, XX::TokenType::PLUS,
-               XX::TokenType::NUMBER_FLOAT, XX::TokenType::STAR,
-               XX::TokenType::NUMBER_INT});
-
-  testScanner("Variable Declaration", "int x = 10;",
-              {XX::TokenType::KW_INT, XX::TokenType::IDENTIFIER,
-               XX::TokenType::EQUAL, XX::TokenType::NUMBER_INT,
-               XX::TokenType::SEMICOLON});
-
-  testScanner("Range Operator", "1..10",
-              {XX::TokenType::NUMBER_INT, XX::TokenType::DOT_DOT,
-               XX::TokenType::NUMBER_INT});
-
-  std::cout << "\nTest Results: " << tests_passed << " Passed, " << tests_failed
-            << " Failed.\n";
   return 0;
 }

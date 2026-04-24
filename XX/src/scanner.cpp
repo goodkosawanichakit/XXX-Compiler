@@ -1,11 +1,17 @@
 #include "scanner.hpp"
+#include <cstdint>
+#include <sys/types.h>
 
 std::unordered_map<std::string, XX::TokenType> XX::Scanner::reserve_words = {
-    {"int", XX::TokenType::KW_INT},   {"float", XX::TokenType::KW_FLOAT},
-    {"bool", XX::TokenType::KW_BOOL}, {"if", XX::TokenType::KW_IF},
-    {"else", XX::TokenType::KW_ELSE}, {"loop", XX::TokenType::KW_LOOP},
-    {"fn", XX::TokenType::KW_FN},     {"return", XX::TokenType::KW_RETURN},
-    {"true", XX::TokenType::KW_TRUE}, {"false", XX::TokenType::KW_FALSE}};
+    {"int8", TokenType::KW_INT8},       {"int16", TokenType::KW_INT16},
+    {"int32", TokenType::KW_INT32},     {"int64", TokenType::KW_INT64},
+    {"float8", TokenType::KW_FLOAT8},   {"float16", TokenType::KW_FLOAT16},
+    {"float32", TokenType::KW_FLOAT32}, {"float64", TokenType::KW_FLOAT64},
+    {"char", TokenType::KW_CHAR},       {"string", TokenType::KW_STRING},
+    {"bool", TokenType::KW_BOOL},       {"if", TokenType::KW_IF},
+    {"else", TokenType::KW_ELSE},       {"loop", TokenType::KW_LOOP},
+    {"fn", TokenType::KW_FN},           {"return", TokenType::KW_RETURN},
+    {"true", TokenType::KW_TRUE},       {"false", TokenType::KW_FALSE}};
 
 XX::Scanner::Scanner(const std::string &source) : source(source) {}
 
@@ -43,7 +49,8 @@ void XX::Scanner::skipWhitespace() {
       advance();
       break;
     case '\n':
-      line++;
+      // line++;
+      lineOffset.push_back(current);
       advance();
       break;
     default:
@@ -51,7 +58,7 @@ void XX::Scanner::skipWhitespace() {
     }
 }
 
-inline void XX::Scanner::comment() {
+void XX::Scanner::comment() {
   while (peek() != '\n' && !isAtEnd())
     advance();
 }
@@ -70,7 +77,8 @@ bool XX::Scanner::multiLineComment() {
         count--;
       break;
     case '\n':
-      line++;
+      // line++;
+      lineOffset.push_back(current);
       break;
     }
     if (count == 0)
@@ -84,11 +92,11 @@ XX::Token XX::Scanner::string() {
     advance();
 
   if (isAtEnd())
-    return Token{TokenType::ERROR, "Unterminated string.", line};
+    return Token{TokenType::ERROR, (uint32_t)start,
+                 (uint16_t)(current - start)};
 
   advance();
-  return Token{TokenType::STRING, source.substr(start + 1, current - start - 2),
-               line};
+  return Token{TokenType::STRING, (uint32_t)start, (uint16_t)(current - start)};
 }
 
 XX::Token XX::Scanner::digit() {
@@ -106,10 +114,10 @@ XX::Token XX::Scanner::digit() {
       advance();
   }
 
-  return (is_float) ? Token{TokenType::NUMBER_FLOAT,
-                            source.substr(start, current - start), line}
-                    : Token{TokenType::NUMBER_INT,
-                            source.substr(start, current - start), line};
+  return (is_float) ? Token{TokenType::NUMBER_FLOAT, (uint32_t)start,
+                            (uint16_t)(current - start)}
+                    : Token{TokenType::NUMBER_INT, (uint32_t)start,
+                            (uint16_t)(current - start)};
 }
 
 XX::Token XX::Scanner::identifier() {
@@ -120,9 +128,10 @@ XX::Token XX::Scanner::identifier() {
   auto it = reserve_words.find(lexeme);
 
   if (it != reserve_words.end()) {
-    return Token{it->second, lexeme, line};
+    return Token{it->second, (uint32_t)start, (uint16_t)(current - start)};
   } else {
-    return Token{TokenType::IDENTIFIER, lexeme, line};
+    return Token{TokenType::IDENTIFIER, (uint32_t)start,
+                 (uint16_t)(current - start)};
   }
 }
 
@@ -132,83 +141,86 @@ XX::Token XX::Scanner::scanToken() {
   start = current;
 
   if (isAtEnd())
-    return Token{TokenType::TOKEN_EOF, "", line};
+    return Token{TokenType::TOKEN_EOF, (uint32_t)start, 1};
 
   char c = advance();
 
   switch (c) {
   case '+':
     if (match('='))
-      return Token{TokenType::PLUS_EQUAL, "+=", line};
-    return Token{TokenType::PLUS, "+", line};
+      return Token{TokenType::PLUS_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::PLUS, (uint32_t)start, 1};
   case '-':
     if (match('='))
-      return Token{TokenType::MINUS_EQUAL, "-=", line};
+      return Token{TokenType::MINUS_EQUAL, (uint32_t)start, 2};
     if (match('>'))
-      return Token{TokenType::RETURN_TYPE, "->", line};
-    return Token{TokenType::MINUS, "-", line};
+      return Token{TokenType::RETURN_TYPE, (uint32_t)start, 2};
+    return Token{TokenType::MINUS, (uint32_t)start, 1};
   case '*':
     if (match('='))
-      return Token{TokenType::STAR_EQUAL, "*=", line};
-    return Token{TokenType::STAR, "*", line};
+      return Token{TokenType::STAR_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::STAR, (uint32_t)start, 1};
   case '/':
     if (match('/')) {
       comment();
       return scanToken();
     } else if (match('*')) {
       if (!multiLineComment())
-        return Token{TokenType::ERROR, "Comment is unterminated", line};
+        return Token{TokenType::ERROR, (uint32_t)start,
+                     (uint16_t)(current - start)};
       return scanToken();
     } else if (match('=')) {
-      return Token{TokenType::SLASH_EQUAL, "/=", line};
+      return Token{TokenType::SLASH_EQUAL, (uint32_t)start, 2};
     }
-    return Token{TokenType::SLASH, "/", line};
+    return Token{TokenType::SLASH, (uint32_t)start, 1};
   case '(':
-    return Token{TokenType::LEFT_PAREN, "(", line};
+    return Token{TokenType::LEFT_PAREN, (uint32_t)start, 1};
   case ')':
-    return Token{TokenType::RIGHT_PAREN, ")", line};
+    return Token{TokenType::RIGHT_PAREN, (uint32_t)start, 1};
   case '{':
-    return Token{TokenType::LEFT_BRACE, "{", line};
+    return Token{TokenType::LEFT_BRACE, (uint32_t)start, 1};
   case '}':
-    return Token{TokenType::RIGHT_BRACE, "}", line};
+    return Token{TokenType::RIGHT_BRACE, (uint32_t)start, 1};
   case '[':
-    return Token{TokenType::LEFT_BRACKET, "[", line};
+    return Token{TokenType::LEFT_BRACKET, (uint32_t)start, 1};
   case ']':
-    return Token{TokenType::RIGHT_BRACE, "]", line};
+    return Token{TokenType::RIGHT_BRACKET, (uint32_t)start, 1};
   case ',':
-    return Token{TokenType::COMMA, ",", line};
+    return Token{TokenType::COMMA, (uint32_t)start, 1};
   case ';':
-    return Token{TokenType::SEMICOLON, ";", line};
+    return Token{TokenType::SEMICOLON, (uint32_t)start, 1};
   case ':':
-    return Token{TokenType::COLON, ":", line};
+    return Token{TokenType::COLON, (uint32_t)start, 1};
   case '.':
     if (match('.'))
-      return Token{TokenType::DOT_DOT, "..", line};
-    return Token{TokenType::DOT, ".", line};
+      return Token{TokenType::DOT_DOT, (uint32_t)start, 2};
+    return Token{TokenType::DOT, (uint32_t)start, 1};
   case '=':
     if (match('='))
-      return Token{TokenType::EQUAL_EQUAL, "==", line};
-    return Token{TokenType::EQUAL, "=", line};
+      return Token{TokenType::EQUAL_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::EQUAL, (uint32_t)start, 1};
   case '!':
     if (match('='))
-      return Token{TokenType::NOT_EQUAL, "!=", line};
-    return Token{TokenType::NOT, "!", line};
+      return Token{TokenType::NOT_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::NOT, (uint32_t)start, 1};
   case '<':
     if (match('='))
-      return Token{TokenType::LESS_EQUAL, "<=", line};
-    return Token{TokenType::LESS, "<", line};
+      return Token{TokenType::LESS_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::LESS, (uint32_t)start, 1};
   case '>':
     if (match('='))
-      return Token{TokenType::GREATER_EQUAL, ">=", line};
-    return Token{TokenType::GREATER, ">", line};
+      return Token{TokenType::GREATER_EQUAL, (uint32_t)start, 2};
+    return Token{TokenType::GREATER, (uint32_t)start, 1};
   case '&':
     if (!match('&'))
-      return Token{TokenType::ERROR, "Expected '&&'", line};
-    return Token{TokenType::AND_AND, "&&", line};
+      return Token{TokenType::ERROR, (uint32_t)start,
+                   (uint16_t)(current - start)};
+    return Token{TokenType::AND_AND, (uint32_t)start, 2};
   case '|':
     if (!match('|'))
-      return Token{TokenType::ERROR, "Expected '||'", line};
-    return Token{TokenType::OR_OR, "||", line};
+      return Token{TokenType::ERROR, (uint32_t)start,
+                   (uint16_t)(current - start)};
+    return Token{TokenType::OR_OR, (uint32_t)start, 2};
   case '"':
     return string();
   default:
@@ -217,8 +229,9 @@ XX::Token XX::Scanner::scanToken() {
     else if (std::isalpha(c) || c == '_') {
       return identifier();
     }
-    return Token{TokenType::ERROR, "Unexpected character.", line};
+    return Token{TokenType::ERROR, (uint32_t)start,
+                 (uint16_t)(current - start)};
   }
 
-  return Token{TokenType::TOKEN_EOF, "", line};
+  return Token{TokenType::TOKEN_EOF, (uint32_t)start, 1};
 }

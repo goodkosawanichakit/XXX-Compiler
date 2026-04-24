@@ -8,6 +8,7 @@ bool XX::Parser::match(XX::TokenType t) {
   return (t == currentToken.type) ? true : false;
 }
 
+/*
 XX::AST::Node *XX::Parser::parse() {
   module = new AST::Node();
   while (currentToken.type != TokenType::TOKEN_EOF) {
@@ -15,3 +16,4 @@ XX::AST::Node *XX::Parser::parse() {
   }
   return module;
 }
+*/
