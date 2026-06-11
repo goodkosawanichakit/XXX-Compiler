@@ -23,7 +23,7 @@ private:
   AST::Expr *parseExpr(int b);
   AST::Expr *parseGroupExpr();
   AST::BinaryExpr *parseBinaryExpr();
-  AST::UnaryExpr *parseUnaryExpr();
+  AST::Expr *parseUnaryExpr();
   AST::Identifier *parseIdent();
   AST::Expr *parseLiteral();
   AST::IntLiteral *parseIntLiteral();

@@ -68,6 +68,13 @@ public:
   ~Stmt() {}
 };
 
+// AKA VarDeclr, FnDeclr
+class Declr : public Node {
+public:
+  using Node::Node;
+  ~Declr() {}
+};
+
 // yet again the name already told it propose.
 // anyway is op as a char is really a good choice?
 // answer to question above: op as a char is ass cause I can't directly use
@@ -145,7 +152,7 @@ public:
   ~FloatLiteral() {}
 };
 
-class VarDeclr : public Stmt {
+class VarDeclr : public Declr {
 private:
   Type type;
   Identifier *ident;
@@ -158,7 +165,7 @@ public:
   inline Expr *getExpr() { return whatShouldInameIt; }
 
   VarDeclr(uint32_t o, uint16_t l, Type t, Identifier *i, Expr *init)
-      : Stmt(Kind::VAR_DECLR, o, l), type(t), ident(i),
+      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i),
         whatShouldInameIt(init) {}
   ~VarDeclr() {}
 };

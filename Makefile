@@ -1,5 +1,5 @@
 CXX = g++ # C compiler
-CXXFLAGS = -Wall -Wextra -Werror -g -IXX/includes # Compiler flags
+CXXFLAGS = -Wall -Wextra -Werror -g -Ikiwi/includes # Compiler flags
 SRC_DIR = kiwi/src
 OBJ_DIR = obj
 BIN_DIR = bin

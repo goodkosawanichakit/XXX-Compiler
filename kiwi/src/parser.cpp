@@ -91,7 +91,7 @@ KIWI::AST::Forest *KIWI::Parser::parse() {
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
 // BinaryExpr is for later cause I'm suck
 // P.S I think I'm finish the BinaryExpr tho.
-KIWI::AST::Stmt *KIWI::Parser::parseVarDeclr() {
+KIWI::AST::Node *KIWI::Parser::parseVarDeclr() {
   AST::Type t = matchType(currentToken.type);
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
@@ -162,6 +162,8 @@ KIWI::AST::Expr *KIWI::Parser::parseExpr(int b) {
     int currB = getBindingPower(currentToken.type);
     advance();
     AST::Expr *right = parseExpr(currB);
+    if (right->getKind() == AST::Kind::ERROR_EXPR)
+      return right;
     left = new AST::BinaryExpr(o, l, op, left, right);
   }
   return left;
@@ -170,16 +172,29 @@ KIWI::AST::Expr *KIWI::Parser::parseExpr(int b) {
 KIWI::AST::Expr *KIWI::Parser::parseGroupExpr() {
   advance();
   AST::Expr *e = parseExpr(0);
+  if (e->getKind() == AST::Kind::ERROR_EXPR)
+    return e;
+  if (!match(TokenType::RIGHT_PAREN)) {
+    uint32_t o = currentToken.offset;
+    uint16_t l = currentToken.length;
+    panic();
+    return new AST::ErrorExpr(
+        o, l,
+        "Expected ')' at -> " +
+            source.substr(o, previousToken.offset + previousToken.length - o));
+  }
   advance();
   return e;
 }
 
-KIWI::AST::UnaryExpr *KIWI::Parser::parseUnaryExpr() {
+KIWI::AST::Expr *KIWI::Parser::parseUnaryExpr() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
   std::string op = source.substr(currentToken.offset, currentToken.length);
   advance();
   AST::Expr *expr = parseExpr(50);
+  if (expr->getKind() == AST::Kind::ERROR_EXPR)
+    return expr;
   return new AST::UnaryExpr(o, l, op, expr);
 }
 
@@ -196,12 +211,13 @@ KIWI::AST::Expr *KIWI::Parser::parseLiteral() {
   case TokenType::LEFT_PAREN:
     return parseGroupExpr();
   default:
+    uint32_t o = currentToken.offset;
+    uint16_t l = currentToken.length;
     panic();
     return new AST::ErrorExpr(
-        previousToken.offset, previousToken.length,
+        o, l,
         "Expected Expression at -> " +
-            source.substr(previousToken.offset,
-                          currentToken.offset + currentToken.length));
+            source.substr(o, previousToken.offset + previousToken.length - o));
   }
 }
 
