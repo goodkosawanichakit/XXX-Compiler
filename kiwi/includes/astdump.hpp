@@ -9,6 +9,7 @@ private:
   const std::vector<uint32_t> &lineOffset;
   void dumpErrorStmt(ErrorStmt *node, int d);
   void dumpErrorExpr(ErrorExpr *node, int d);
+  void dumpErrorDeclr(ErrorDeclr *node, int d);
   void dumpIdent(Identifier *node, int d);
   void dumpFloatLiteral(FloatLiteral *node, int d);
   void dumpIntLiteral(IntLiteral *node, int d);

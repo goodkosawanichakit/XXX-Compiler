@@ -19,7 +19,8 @@ private:
   bool expectSemi();
   void panic();
   AST::Type matchType(TokenType t);
-  AST::Stmt *parseVarDeclr();
+  AST::Declr *parseDeclr();
+  AST::Declr *parseVarDeclr();
   AST::Expr *parseExpr(int b);
   AST::Expr *parseGroupExpr();
   AST::BinaryExpr *parseBinaryExpr();

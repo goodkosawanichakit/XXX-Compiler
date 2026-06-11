@@ -15,7 +15,8 @@ enum class Kind {
   FLOAT_LITERAL,
   VAR_DECLR,
   ERROR_STMT,
-  ERROR_EXPR
+  ERROR_EXPR,
+  ERROR_DECLR
 };
 
 enum class Type {
@@ -188,6 +189,16 @@ public:
   inline std::string getMessage() { return msg; }
   ErrorExpr(uint32_t o, uint16_t l, std::string msg)
       : Expr(Kind::ERROR_EXPR, o, l), msg(msg) {}
+};
+
+class ErrorDeclr : public Declr {
+private:
+  std::string msg;
+
+public:
+  inline std::string getMessage() { return msg; }
+  ErrorDeclr(uint32_t o, uint16_t l, std::string msg)
+      : Declr(Kind::ERROR_EXPR, o, l), msg(msg) {}
 };
 
 } // namespace KIWI::AST

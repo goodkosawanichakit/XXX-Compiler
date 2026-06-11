@@ -21,6 +21,7 @@ std::string matchEnumKind(KIWI::AST::Kind k) {
     return "IDENTIFIER";
   case KIWI::AST::Kind::ERROR_STMT:
   case KIWI::AST::Kind::ERROR_EXPR:
+  case KIWI::AST::Kind::ERROR_DECLR:
     return "ERROR";
   }
   return "UNKNOWN_KIND";
@@ -115,6 +116,8 @@ void KIWI::AST::Dumper::dumpExpr(Expr *node, int d) {
     return dumpErrorStmt((ErrorStmt *)node, d);
   case Kind::ERROR_EXPR:
     return dumpErrorExpr((ErrorExpr *)node, d);
+  case Kind::ERROR_DECLR:
+    return dumpErrorDeclr((ErrorDeclr *)node, d);
   default:
     std::cout << "How did you get here." << std::endl;
   }
@@ -128,6 +131,13 @@ void KIWI::AST::Dumper::dumpErrorStmt(ErrorStmt *node, int d) {
 }
 
 void KIWI::AST::Dumper::dumpErrorExpr(ErrorExpr *node, int d) {
+  if (!node)
+    return;
+  std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind())
+            << " Error: " << node->getMessage() << std::endl;
+}
+
+void KIWI::AST::Dumper::dumpErrorDeclr(ErrorDeclr *node, int d) {
   if (!node)
     return;
   std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind())

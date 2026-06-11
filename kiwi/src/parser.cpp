@@ -1,6 +1,7 @@
 #include "parser.hpp"
 #include "ast.hpp"
 #include "scanner.hpp"
+#include "token.hpp"
 #include <cstdint>
 #include <string>
 
@@ -69,29 +70,37 @@ bool KIWI::Parser::expectSemi() {
 KIWI::AST::Forest *KIWI::Parser::parse() {
   AST::Forest *module = new AST::Forest();
   while (!match(TokenType::TOKEN_EOF)) {
-    switch (currentToken.type) {
-    case TokenType::KW_INT8:
-    case TokenType::KW_INT16:
-    case TokenType::KW_INT32:
-    case TokenType::KW_INT64:
-    case TokenType::KW_FLOAT8:
-    case TokenType::KW_FLOAT16:
-    case TokenType::KW_FLOAT32:
-    case TokenType::KW_FLOAT64:
-      module->vec.push_back(parseVarDeclr());
-      break;
-    default:
-      // TODO: I don't know what I'm gonna do, C++ make me wanna cry
-      return nullptr;
-    }
+    module->vec.push_back(parseDeclr());
   }
   return module;
+}
+
+KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
+  switch (currentToken.type) {
+  case TokenType::KW_INT8:
+  case TokenType::KW_INT16:
+  case TokenType::KW_INT32:
+  case TokenType::KW_INT64:
+  case TokenType::KW_FLOAT8:
+  case TokenType::KW_FLOAT16:
+  case TokenType::KW_FLOAT32:
+  case TokenType::KW_FLOAT64:
+    return parseVarDeclr();
+  default:
+    advance();
+    return new AST::ErrorDeclr(
+        previousToken.offset, previousToken.length,
+        "Unknown keyword at -> " +
+            source.substr(previousToken.offset, currentToken.offset +
+                                                    currentToken.length -
+                                                    previousToken.offset));
+  }
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
 // BinaryExpr is for later cause I'm suck
 // P.S I think I'm finish the BinaryExpr tho.
-KIWI::AST::Node *KIWI::Parser::parseVarDeclr() {
+KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
   AST::Type t = matchType(currentToken.type);
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
@@ -101,7 +110,7 @@ KIWI::AST::Node *KIWI::Parser::parseVarDeclr() {
   // TODO: MEMORY LEAK ALERT
   if (!match(TokenType::EQUAL)) {
     if (!expectSemi())
-      return new AST::ErrorStmt(
+      return new AST::ErrorDeclr(
           o, l,
           "You forget to add ';' at the end of this -> " +
               source.substr(o,
@@ -119,7 +128,7 @@ KIWI::AST::Node *KIWI::Parser::parseVarDeclr() {
 
   if (!expectSemi())
     // TODO: MEMORY LEAK ALERT, I'll leave it for the OS to clean it up for now.
-    return new AST::ErrorStmt(
+    return new AST::ErrorDeclr(
         o, l,
         "You forget to add ';' at the end of this -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
