@@ -8,12 +8,17 @@ namespace KIWI::AST {
 
 enum class Kind {
   EXPR,
+  STMT,
+  DECLR,
+  BLOCK,
   BINARY_EXPR,
   UNARY_EXPR,
   IDENTIFIER,
   INT_LITERAL,
   FLOAT_LITERAL,
   VAR_DECLR,
+  PARAM_DECLR,
+  FUNC_DECLR,
   ERROR_STMT,
   ERROR_EXPR,
   ERROR_DECLR
@@ -69,11 +74,17 @@ public:
   ~Stmt() {}
 };
 
-// AKA VarDeclr, FnDeclr
 class Declr : public Node {
 public:
   using Node::Node;
   ~Declr() {}
+};
+
+// It's just a Forest node but for a FuncDeclr and those if else, loop
+class Block : public Node {
+public:
+  std::vector<Node *> stmts;
+  Block(uint32_t o, uint16_t l) : Node(Kind::BLOCK, o, l) {}
 };
 
 // yet again the name already told it propose.
@@ -171,6 +182,44 @@ public:
   ~VarDeclr() {}
 };
 
+class ParamDeclr : public Declr {
+private:
+  Type type;
+  Identifier *ident;
+
+public:
+  inline Type getType() { return type; }
+  inline Identifier *getIdentifier() { return ident; }
+  ParamDeclr(uint32_t o, uint16_t l, Type t, Identifier *i)
+      : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(i) {}
+};
+
+class Params : public Declr {
+private:
+  std::vector<Declr *> init;
+
+public:
+};
+
+class FuncDeclr : public Declr {
+private:
+  Identifier *name;
+  std::vector<Declr *> &params;
+  Type returnType;
+  Block *block;
+
+public:
+  inline Identifier *getName() { return name; }
+  inline std::vector<Declr *> &getParams() { return params; }
+  inline Type getReturnType() { return returnType; }
+  inline Block *getBlock() { return block; }
+
+  FuncDeclr(uint32_t o, uint16_t l, Identifier *name,
+            std::vector<Declr *> &params, Type returnType, Block *block)
+      : Declr(Kind::FUNC_DECLR, o, l), name(name), params(params),
+        returnType(returnType), block(block) {}
+};
+
 class ErrorStmt : public Stmt {
 private:
   std::string msg;
@@ -198,7 +247,7 @@ private:
 public:
   inline std::string getMessage() { return msg; }
   ErrorDeclr(uint32_t o, uint16_t l, std::string msg)
-      : Declr(Kind::ERROR_EXPR, o, l), msg(msg) {}
+      : Declr(Kind::ERROR_DECLR, o, l), msg(msg) {}
 };
 
 } // namespace KIWI::AST

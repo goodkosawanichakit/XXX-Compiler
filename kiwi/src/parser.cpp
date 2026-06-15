@@ -86,6 +86,8 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
   case TokenType::KW_FLOAT32:
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
+  case TokenType::KW_FN:
+    return parseFuncDeclr();
   default:
     advance();
     return new AST::ErrorDeclr(
@@ -135,6 +137,40 @@ KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
 
   advance();
   return new AST::VarDeclr(o, l, t, ident, value);
+}
+
+KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+  advance();
+  AST::Identifier *ident = parseIdent();
+
+  // parse Params
+  std::vector<AST::Declr *> param = parseParam();
+
+  if (!match(TokenType::RETURN_TYPE))
+    return new AST::ErrorDeclr(o, l, "");
+  advance();
+
+  // parse Type I mean expect Type
+  AST::Type retType = matchType(currentToken.type);
+  advance();
+
+  // parse Block
+  AST::Block *block = parseBlock();
+  return new AST::FuncDeclr(o, l, ident, param, retType, block);
+}
+
+std::vector<KIWI::AST::Declr *> &KIWI::Parser::parseParam() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+  if (!match(TokenType::LEFT_PAREN))
+    return new AST::ErrorDeclr(o, l, "");
+  advance();
+
+  if (!match(TokenType::RIGHT_PAREN))
+    return new AST::ErrorDeclr(o, l, "");
+  advance();
 }
 
 KIWI::AST::Identifier *KIWI::Parser::parseIdent() {

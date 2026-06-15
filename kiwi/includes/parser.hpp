@@ -21,6 +21,9 @@ private:
   AST::Type matchType(TokenType t);
   AST::Declr *parseDeclr();
   AST::Declr *parseVarDeclr();
+  AST::Declr *parseFuncDeclr();
+  std::vector<AST::Declr *> &parseParameters();
+  AST::Block *parseBlock();
   AST::Expr *parseExpr(int b);
   AST::Expr *parseGroupExpr();
   AST::BinaryExpr *parseBinaryExpr();

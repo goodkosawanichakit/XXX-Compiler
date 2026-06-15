@@ -12,6 +12,13 @@ Declr      = VarDeclr
            ;
 
 VarDeclr   = type IDENTIFIER ("=" Expr)? ";" ;
+FuncDeclr  = "fn" IDENTIFIER "(" params? ")" "->" type block ; (* WIP *)
+params     = type IDENTIFIER ("," type IDENTIFIER)* ; (* WIP *)
+
+(* Statements *)
+block      = "{" (decl | stmt)* "}" ; (* WIP *)
+
+stmt       = returnStmt ; (* WIP *)
 
 (* Expressions *)
 expr       = unary (OP unary)* ;
@@ -36,11 +43,9 @@ NUMBER_INT   = DIGIT+ ;
 NUMBER_FLOAT =  DIGIT+ "." DIGIT+ ;
 OP           = "+" | "-" | "*" | "/" ;
 IDENTIFIER   = (ALPHA | "_") (ALPHA | DIGIT | "_")* ;
-STRING       = '"' ALPHA+ '"' ;
+STRING       = '"' (ANY CHARACTER EXCEPT ") '"' ;
 ALPHA        = [a-zA-Z] ;
 DIGIT        = [0-9] ;
 
 ```
-```
-
 ```
