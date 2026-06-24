@@ -7,6 +7,8 @@ std::string matchEnumKind(KIWI::AST::Kind k) {
   switch (k) {
   case KIWI::AST::Kind::EXPR:
     return "EXPR";
+  case KIWI::AST::Kind::BLOCK:
+    return "BLOCK";
   case KIWI::AST::Kind::BINARY_EXPR:
     return "BINARY_EXPR";
   case KIWI::AST::Kind::UNARY_EXPR:

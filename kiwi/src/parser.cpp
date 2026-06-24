@@ -14,6 +14,16 @@ bool KIWI::Parser::match(KIWI::TokenType t) {
   return (t == currentToken.type) ? true : false;
 }
 
+bool KIWI::Parser::expect(KIWI::TokenType t) {
+  if (match(t)) {
+    advance();
+    return true;
+  }
+
+  panic();
+  return false;
+}
+
 KIWI::AST::Type KIWI::Parser::matchType(KIWI::TokenType t) {
   switch (t) {
   case KIWI::TokenType::KW_INT8:
@@ -35,18 +45,6 @@ KIWI::AST::Type KIWI::Parser::matchType(KIWI::TokenType t) {
   default:
     // TODO: It's unreachable what do I do (in todo yes)
     return AST::Type::INT8;
-  }
-}
-
-bool KIWI::Parser::isOP() {
-  switch (currentToken.type) {
-  case TokenType::PLUS:
-  case TokenType::MINUS:
-  case TokenType::STAR:
-  case TokenType::SLASH:
-    return true;
-  default:
-    return false;
   }
 }
 
@@ -86,8 +84,8 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
   case TokenType::KW_FLOAT32:
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
-  case TokenType::KW_FN:
-    return parseFuncDeclr();
+  // case TokenType::KW_FN:
+  //   return parseFuncDeclr();
   default:
     advance();
     return new AST::ErrorDeclr(
@@ -100,8 +98,6 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
-// BinaryExpr is for later cause I'm suck
-// P.S I think I'm finish the BinaryExpr tho.
 KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
   AST::Type t = matchType(currentToken.type);
   uint32_t o = currentToken.offset;
@@ -109,15 +105,14 @@ KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
   advance();
   AST::Identifier *ident = parseIdent();
 
-  // TODO: MEMORY LEAK ALERT
   if (!match(TokenType::EQUAL)) {
-    if (!expectSemi())
+    if (!expect(TokenType::SEMICOLON)) {
       return new AST::ErrorDeclr(
           o, l,
           "You forget to add ';' at the end of this -> " +
               source.substr(o,
                             previousToken.offset + previousToken.length - o));
-    advance();
+    }
     return new AST::VarDeclr(o, l, t, ident, nullptr);
   }
   advance();
@@ -125,54 +120,17 @@ KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
   KIWI::AST::Expr *value = parseExpr(0);
 
   if (value->getKind() == AST::Kind::ERROR_EXPR)
-
     return new AST::VarDeclr(o, l, t, ident, value);
 
-  if (!expectSemi())
-    // TODO: MEMORY LEAK ALERT, I'll leave it for the OS to clean it up for now.
+  if (!expect(TokenType::SEMICOLON)) {
     return new AST::ErrorDeclr(
         o, l,
         "You forget to add ';' at the end of this -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
+  }
 
-  advance();
   return new AST::VarDeclr(o, l, t, ident, value);
 }
-
-KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
-  uint32_t o = currentToken.offset;
-  uint16_t l = currentToken.length;
-  advance();
-  AST::Identifier *ident = parseIdent();
-
-  // parse Params
-  std::vector<AST::Declr *> param = parseParam();
-
-  if (!match(TokenType::RETURN_TYPE))
-    return new AST::ErrorDeclr(o, l, "");
-  advance();
-
-  // parse Type I mean expect Type
-  AST::Type retType = matchType(currentToken.type);
-  advance();
-
-  // parse Block
-  AST::Block *block = parseBlock();
-  return new AST::FuncDeclr(o, l, ident, param, retType, block);
-}
-
-std::vector<KIWI::AST::Declr *> &KIWI::Parser::parseParam() {
-  uint32_t o = currentToken.offset;
-  uint16_t l = currentToken.length;
-  if (!match(TokenType::LEFT_PAREN))
-    return new AST::ErrorDeclr(o, l, "");
-  advance();
-
-  if (!match(TokenType::RIGHT_PAREN))
-    return new AST::ErrorDeclr(o, l, "");
-  advance();
-}
-
 KIWI::AST::Identifier *KIWI::Parser::parseIdent() {
   advance();
   return new AST::Identifier(
@@ -217,18 +175,20 @@ KIWI::AST::Expr *KIWI::Parser::parseExpr(int b) {
 KIWI::AST::Expr *KIWI::Parser::parseGroupExpr() {
   advance();
   AST::Expr *e = parseExpr(0);
+
   if (e->getKind() == AST::Kind::ERROR_EXPR)
     return e;
-  if (!match(TokenType::RIGHT_PAREN)) {
-    uint32_t o = currentToken.offset;
-    uint16_t l = currentToken.length;
-    panic();
+
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+
+  if (!expect(TokenType::RIGHT_PAREN)) {
     return new AST::ErrorExpr(
         o, l,
         "Expected ')' at -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
   }
-  advance();
+
   return e;
 }
 
