@@ -19,6 +19,10 @@ std::string matchEnumKind(KIWI::AST::Kind k) {
     return "FLOAT_LITERAL";
   case KIWI::AST::Kind::VAR_DECLR:
     return "VAR_DECLR";
+  case KIWI::AST::Kind::PARAM_DECLR:
+    return "PARAM_DECLR";
+  case KIWI::AST::Kind::FUNC_DECLR:
+    return "FUNC_DECLR";
   case KIWI::AST::Kind::IDENTIFIER:
     return "IDENTIFIER";
   case KIWI::AST::Kind::ERROR_STMT:
@@ -84,6 +88,9 @@ void KIWI::AST::Dumper::dump(KIWI::AST::Forest *module) {
     case Kind::VAR_DECLR:
       dumpVarDeclr((VarDeclr *)node, 0);
       break;
+    case Kind::FUNC_DECLR:
+      dumpFuncDeclr((FuncDeclr *)node, 0);
+      break;
     default:
       // TODO: IDK what I need to handle in this deafult section.
       // so todo is I need to think what I'm gonna do
@@ -92,6 +99,20 @@ void KIWI::AST::Dumper::dump(KIWI::AST::Forest *module) {
   }
 }
 
+void KIWI::AST::Dumper::dumpFuncDeclr(FuncDeclr *node, int d) {
+  if (!node)
+    return;
+
+  std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind()) << ' '
+            << matchEnumType(node->getReturnType()) << std::endl;
+
+  dumpIdent(node->getName(), d + 1);
+
+  for (Declr *param : node->getParams())
+    dumpParamDeclr((ParamDeclr *)param, d + 1);
+
+  // dumpBlock(node->getBlock(), d + 1);
+}
 // Prob work fine I think
 void KIWI::AST::Dumper::dumpVarDeclr(VarDeclr *node, int d) {
   if (!node)
@@ -100,6 +121,16 @@ void KIWI::AST::Dumper::dumpVarDeclr(VarDeclr *node, int d) {
             << matchEnumType(node->getType())
             << " Name: " << node->getIdentifier()->getName() << std::endl;
   dumpExpr(node->getExpr(), d + 1);
+}
+
+void KIWI::AST::Dumper::dumpParamDeclr(ParamDeclr *node, int d) {
+  if (!node)
+    return;
+
+  std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind()) << ' '
+            << matchEnumType(node->getType()) << std::endl;
+
+  dumpIdent(node->getIdentifier(), d + 1);
 }
 
 void KIWI::AST::Dumper::dumpExpr(Expr *node, int d) {

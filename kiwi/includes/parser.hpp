@@ -24,6 +24,7 @@ private:
   AST::Declr *parseVarDeclr();
   AST::Declr *parseFuncDeclr();
   std::vector<AST::Declr *> parseParams();
+  AST::Declr *parseParam();
   AST::Block *parseBlock();
   AST::Expr *parseExpr(int b);
   AST::Expr *parseGroupExpr();

@@ -17,8 +17,8 @@ enum class Kind {
   INT_LITERAL,
   FLOAT_LITERAL,
   VAR_DECLR,
-  // PARAM_DECLR,
-  // FUNC_DECLR,
+  PARAM_DECLR,
+  FUNC_DECLR,
   ERROR_STMT,
   ERROR_EXPR,
   ERROR_DECLR
@@ -182,37 +182,37 @@ public:
   ~VarDeclr() {}
 };
 
-// class ParamDeclr : public Declr {
-// private:
-//   Type type;
-//   Identifier *ident;
-//
-// public:
-//   inline Type getType() { return type; }
-//   inline Identifier *getIdentifier() { return ident; }
-//   ParamDeclr(uint32_t o, uint16_t l, Type t, Identifier *i)
-//       : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(i) {}
-// };
-//
-// class FuncDeclr : public Declr {
-// private:
-//   Identifier *name;
-//   std::vector<Declr *> &params;
-//   Type returnType;
-//   Block *block;
-//
-// public:
-//   inline Identifier *getName() { return name; }
-//   inline std::vector<Declr *> &getParams() { return params; }
-//   inline Type getReturnType() { return returnType; }
-//   inline Block *getBlock() { return block; }
-//
-//   FuncDeclr(uint32_t o, uint16_t l, Identifier *name,
-//             std::vector<Declr *> &params, Type returnType, Block *block)
-//       : Declr(Kind::FUNC_DECLR, o, l), name(name), params(params),
-//         returnType(returnType), block(block) {}
-// };
-//
+class ParamDeclr : public Declr {
+private:
+  Type type;
+  Identifier *ident;
+
+public:
+  inline Type getType() { return type; }
+  inline Identifier *getIdentifier() { return ident; }
+  ParamDeclr(uint32_t o, uint16_t l, Type t, Identifier *i)
+      : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(i) {}
+};
+
+class FuncDeclr : public Declr {
+private:
+  Identifier *name;
+  std::vector<Declr *> params;
+  Type returnType;
+  Block *block;
+
+public:
+  inline Identifier *getName() { return name; }
+  inline std::vector<Declr *> &getParams() { return params; }
+  inline Type getReturnType() { return returnType; }
+  inline Block *getBlock() { return block; }
+
+  FuncDeclr(uint32_t o, uint16_t l, Identifier *name,
+            std::vector<Declr *> params, Type returnType, Block *block)
+      : Declr(Kind::FUNC_DECLR, o, l), name(name), params(params),
+        returnType(returnType), block(block) {}
+};
+
 class ErrorStmt : public Stmt {
 private:
   std::string msg;

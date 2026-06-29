@@ -57,14 +57,6 @@ void KIWI::Parser::panic() {
     advance();
 }
 
-bool KIWI::Parser::expectSemi() {
-  if (match(TokenType::SEMICOLON))
-    return true;
-  // make error node or maybe just panic
-  panic();
-  return false;
-}
-
 KIWI::AST::Forest *KIWI::Parser::parse() {
   AST::Forest *module = new AST::Forest();
   while (!match(TokenType::TOKEN_EOF)) {
@@ -84,8 +76,8 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
   case TokenType::KW_FLOAT32:
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
-  // case TokenType::KW_FN:
-  //   return parseFuncDeclr();
+  case TokenType::KW_FN:
+    return parseFuncDeclr();
   default:
     advance();
     return new AST::ErrorDeclr(
@@ -95,6 +87,59 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
                                                     currentToken.length -
                                                     previousToken.offset));
   }
+}
+
+KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+  advance();
+
+  AST::Identifier *ident = parseIdent();
+
+  if (!expect(TokenType::LEFT_PAREN)) {
+    return nullptr;
+  }
+
+  std::vector<AST::Declr *> params;
+  params = parseParams();
+
+  if (!expect(TokenType::RIGHT_PAREN)) {
+    return nullptr;
+  }
+
+  if (!expect(TokenType::RETURN_TYPE)) {
+    return nullptr;
+  }
+
+  AST::Type retType = matchType(currentToken.type);
+  advance();
+
+  // parseBlock
+
+  return new AST::FuncDeclr(o, l, ident, params, retType, nullptr);
+}
+
+std::vector<KIWI::AST::Declr *> KIWI::Parser::parseParams() {
+  std::vector<AST::Declr *> params;
+  while (!match(TokenType::RIGHT_PAREN) && !match(TokenType::TOKEN_EOF)) {
+    params.push_back(parseParam());
+    if (!match(TokenType::COMMA))
+      break;
+    advance();
+  }
+  return params;
+}
+
+KIWI::AST::Declr *KIWI::Parser::parseParam() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+
+  AST::Type t = matchType(currentToken.type);
+  advance();
+
+  AST::Identifier *ident = parseIdent();
+
+  return new AST::ParamDeclr(o, l, t, ident);
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
@@ -131,6 +176,7 @@ KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
 
   return new AST::VarDeclr(o, l, t, ident, value);
 }
+
 KIWI::AST::Identifier *KIWI::Parser::parseIdent() {
   advance();
   return new AST::Identifier(

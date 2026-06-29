@@ -17,6 +17,8 @@ private:
   void dumpUnaryExpr(UnaryExpr *node, int d);
   void dumpExpr(Expr *node, int d);
   void dumpVarDeclr(VarDeclr *node, int d);
+  void dumpFuncDeclr(FuncDeclr *node, int d);
+  void dumpParamDeclr(ParamDeclr *node, int d);
   uint32_t getLine(uint32_t of);
 
 public:
