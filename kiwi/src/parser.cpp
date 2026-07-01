@@ -24,7 +24,8 @@ bool KIWI::Parser::expect(KIWI::TokenType t) {
   return false;
 }
 
-KIWI::AST::Type KIWI::Parser::matchType(KIWI::TokenType t) {
+KIWI::AST::Type KIWI::Parser::parseType(KIWI::TokenType t) {
+  advance();
   switch (t) {
   case KIWI::TokenType::KW_INT8:
     return AST::Type::INT8;
@@ -111,12 +112,11 @@ KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
     return nullptr;
   }
 
-  AST::Type retType = matchType(currentToken.type);
-  advance();
+  AST::Type retType = parseType(currentToken.type);
 
-  // parseBlock
+  AST::Block *block = parseBlock();
 
-  return new AST::FuncDeclr(o, l, ident, params, retType, nullptr);
+  return new AST::FuncDeclr(o, l, ident, params, retType, block);
 }
 
 std::vector<KIWI::AST::Declr *> KIWI::Parser::parseParams() {
@@ -134,20 +134,60 @@ KIWI::AST::Declr *KIWI::Parser::parseParam() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
 
-  AST::Type t = matchType(currentToken.type);
-  advance();
+  AST::Type t = parseType(currentToken.type);
 
   AST::Identifier *ident = parseIdent();
 
   return new AST::ParamDeclr(o, l, t, ident);
 }
 
-// VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
-KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
-  AST::Type t = matchType(currentToken.type);
+KIWI::AST::Block *KIWI::Parser::parseBlock() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
-  advance();
+
+  if (!expect(TokenType::LEFT_BRACE)) {
+    return nullptr;
+  }
+
+  std::vector<AST::Node *> stmts;
+
+  while (!match(TokenType::RIGHT_BRACE) && !match(TokenType::TOKEN_EOF)) {
+    stmts.push_back(parseBlockItems());
+  }
+
+  expect(TokenType::RIGHT_BRACE);
+
+  return new AST::Block(o, l, stmts);
+}
+
+KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
+  switch (currentToken.type) {
+  case TokenType::KW_INT8:
+  case TokenType::KW_INT16:
+  case TokenType::KW_INT32:
+  case TokenType::KW_INT64:
+  case TokenType::KW_FLOAT8:
+  case TokenType::KW_FLOAT16:
+  case TokenType::KW_FLOAT32:
+  case TokenType::KW_FLOAT64:
+    return parseVarDeclr();
+  default:
+    advance();
+    return new AST::ErrorDeclr(
+        previousToken.offset, previousToken.length,
+        "Unknown keyword at -> " +
+            source.substr(previousToken.offset, currentToken.offset +
+                                                    currentToken.length -
+                                                    previousToken.offset));
+  }
+}
+
+// VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
+KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+  AST::Type t = parseType(currentToken.type);
+
   AST::Identifier *ident = parseIdent();
 
   if (!match(TokenType::EQUAL)) {
@@ -175,13 +215,6 @@ KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
   }
 
   return new AST::VarDeclr(o, l, t, ident, value);
-}
-
-KIWI::AST::Identifier *KIWI::Parser::parseIdent() {
-  advance();
-  return new AST::Identifier(
-      previousToken.offset, previousToken.length,
-      source.substr(previousToken.offset, previousToken.length));
 }
 
 int KIWI::Parser::getBindingPower(KIWI::TokenType t) {
@@ -270,6 +303,13 @@ KIWI::AST::Expr *KIWI::Parser::parseLiteral() {
         "Expected Expression at -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
   }
+}
+
+KIWI::AST::Identifier *KIWI::Parser::parseIdent() {
+  advance();
+  return new AST::Identifier(
+      previousToken.offset, previousToken.length,
+      source.substr(previousToken.offset, previousToken.length));
 }
 
 KIWI::AST::IntLiteral *KIWI::Parser::parseIntLiteral() {

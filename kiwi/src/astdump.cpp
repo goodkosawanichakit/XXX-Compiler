@@ -111,8 +111,9 @@ void KIWI::AST::Dumper::dumpFuncDeclr(FuncDeclr *node, int d) {
   for (Declr *param : node->getParams())
     dumpParamDeclr((ParamDeclr *)param, d + 1);
 
-  // dumpBlock(node->getBlock(), d + 1);
+  dumpBlock(node->getBlock(), d + 1);
 }
+
 // Prob work fine I think
 void KIWI::AST::Dumper::dumpVarDeclr(VarDeclr *node, int d) {
   if (!node)
@@ -131,6 +132,29 @@ void KIWI::AST::Dumper::dumpParamDeclr(ParamDeclr *node, int d) {
             << matchEnumType(node->getType()) << std::endl;
 
   dumpIdent(node->getIdentifier(), d + 1);
+}
+
+void KIWI::AST::Dumper::dumpBlock(Block *node, int d) {
+  if (!node)
+    return;
+  std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind())
+            << std::endl;
+
+  for (auto i : node->stmts)
+    dumpBlockItems(i, d + 1);
+}
+
+void KIWI::AST::Dumper::dumpBlockItems(Node *node, int d) {
+  if (!node)
+    return;
+
+  switch (node->getKind()) {
+  case Kind::VAR_DECLR:
+    dumpVarDeclr((VarDeclr *)node, d + 1);
+    break;
+  default:
+    dumpErrorStmt((ErrorStmt *)node, d + 1);
+  }
 }
 
 void KIWI::AST::Dumper::dumpExpr(Expr *node, int d) {

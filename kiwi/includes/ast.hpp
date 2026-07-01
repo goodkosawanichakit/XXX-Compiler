@@ -80,11 +80,12 @@ public:
   ~Declr() {}
 };
 
-// It's just a Forest node but for a FuncDeclr and those if else, loop
+// It's just a Forest node but for a FuncDeclr and if else, loop
 class Block : public Node {
 public:
   std::vector<Node *> stmts;
-  Block(uint32_t o, uint16_t l) : Node(Kind::BLOCK, o, l) {}
+  Block(uint32_t o, uint16_t l, std::vector<Node *> b)
+      : Node(Kind::BLOCK, o, l), stmts(b) {}
 };
 
 // yet again the name already told it propose.
@@ -106,8 +107,6 @@ public:
 
   BinaryExpr(uint32_t o, uint16_t l, std::string op, Expr *lexpr, Expr *rexpr)
       : Expr(Kind::BINARY_EXPR, o, l), op(op), LExpr(lexpr), RExpr(rexpr) {}
-
-  ~BinaryExpr() {}
 };
 
 class UnaryExpr : public Expr {
@@ -131,7 +130,7 @@ public:
 
   Identifier(uint32_t o, uint16_t l, std::string n)
       : Expr(Kind::IDENTIFIER, o, l), name(n) {}
-  ~Identifier() {}
+  ~Identifier();
 };
 
 // why do I store in int64_t bruh.
@@ -179,7 +178,6 @@ public:
   VarDeclr(uint32_t o, uint16_t l, Type t, Identifier *i, Expr *init)
       : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i),
         whatShouldInameIt(init) {}
-  ~VarDeclr() {}
 };
 
 class ParamDeclr : public Declr {
