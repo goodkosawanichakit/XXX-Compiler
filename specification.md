@@ -18,7 +18,9 @@ params     = type IDENTIFIER ("," type IDENTIFIER)* ; (* WIP *)
 (* Statements *)
 block      = "{" (decl | stmt)* "}" ; (* WIP *)
 
-stmt       = returnStmt ; (* WIP *)
+stmt       = returnStmt | assign ; (* WIP *)
+assign     = IDENTIFIER "=" expr ";" ; (* WIP *) 
+returnStmt = "return" expr ";" ; (* WIP *)
 
 (* Expressions *)
 expr       = unary (OP unary)* ;
@@ -47,5 +49,4 @@ STRING       = '"' (ANY CHARACTER EXCEPT ") '"' ;
 ALPHA        = [a-zA-Z] ;
 DIGIT        = [0-9] ;
 
-```
 ```

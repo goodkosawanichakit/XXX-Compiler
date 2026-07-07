@@ -16,6 +16,7 @@ enum class Kind {
   IDENTIFIER,
   INT_LITERAL,
   FLOAT_LITERAL,
+  RETURN_STMT,
   VAR_DECLR,
   PARAM_DECLR,
   FUNC_DECLR,
@@ -36,7 +37,6 @@ enum class Type {
 };
 
 // base class of all Node idk it's just that, do I really need to comment?
-// but wait why did I use differnt type for offset and length???????
 class Node {
 private:
   Kind kind;
@@ -163,21 +163,29 @@ public:
   ~FloatLiteral() {}
 };
 
+class ReturnStmt : public Stmt {
+private:
+  Expr *retExpr;
+
+public:
+  inline Expr *getExpr() { return retExpr; }
+  ReturnStmt(uint32_t o, uint16_t l, Expr *e)
+      : Stmt(Kind::RETURN_STMT, o, l), retExpr(e) {}
+};
+
 class VarDeclr : public Declr {
 private:
   Type type;
   Identifier *ident;
-  Expr
-      *whatShouldInameIt; // What should I name this variable???? English 2 / 10
+  Expr *initExpr; // What should I name this variable???? English 2 / 10
 
 public:
   inline Type getType() { return type; }
   inline Identifier *getIdentifier() { return ident; }
-  inline Expr *getExpr() { return whatShouldInameIt; }
+  inline Expr *getExpr() { return initExpr; }
 
   VarDeclr(uint32_t o, uint16_t l, Type t, Identifier *i, Expr *init)
-      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i),
-        whatShouldInameIt(init) {}
+      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i), initExpr(init) {}
 };
 
 class ParamDeclr : public Declr {

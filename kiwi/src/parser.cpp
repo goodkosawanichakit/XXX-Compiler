@@ -155,7 +155,10 @@ KIWI::AST::Block *KIWI::Parser::parseBlock() {
     stmts.push_back(parseBlockItems());
   }
 
-  expect(TokenType::RIGHT_BRACE);
+  if (!expect(TokenType::RIGHT_BRACE)) {
+    // TODO: free items in stmts;
+    return nullptr;
+  }
 
   return new AST::Block(o, l, stmts);
 }
@@ -171,6 +174,10 @@ KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
   case TokenType::KW_FLOAT32:
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
+  case TokenType::IDENTIFIER:
+    // parseAssign:
+  case TokenType::KW_RETURN:
+    return parseRet();
   default:
     advance();
     return new AST::ErrorDeclr(
@@ -180,6 +187,19 @@ KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
                                                     currentToken.length -
                                                     previousToken.offset));
   }
+}
+
+KIWI::AST::Stmt *KIWI::Parser::parseRet() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+  advance();
+
+  AST::Expr *e = parseExpr(0);
+
+  if (!expect(TokenType::SEMICOLON))
+    return nullptr;
+
+  return new AST::ReturnStmt(o, l, e);
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
