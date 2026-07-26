@@ -8,14 +8,21 @@ namespace KIWI::AST {
 
 enum class Kind {
   EXPR,
+  // STMT,
+  // DECLR,
+  BLOCK,
   BINARY_EXPR,
   UNARY_EXPR,
   IDENTIFIER,
   INT_LITERAL,
   FLOAT_LITERAL,
+  RETURN_STMT,
   VAR_DECLR,
+  PARAM_DECLR,
+  FUNC_DECLR,
   ERROR_STMT,
-  ERROR_EXPR
+  ERROR_EXPR,
+  ERROR_DECLR
 };
 
 enum class Type {
@@ -30,7 +37,6 @@ enum class Type {
 };
 
 // base class of all Node idk it's just that, do I really need to comment?
-// but wait why did I use differnt type for offset and length???????
 class Node {
 private:
   Kind kind;
@@ -68,6 +74,20 @@ public:
   ~Stmt() {}
 };
 
+class Declr : public Node {
+public:
+  using Node::Node;
+  ~Declr() {}
+};
+
+// It's just a Forest node but for a FuncDeclr and if else, loop
+class Block : public Node {
+public:
+  std::vector<Node *> stmts;
+  Block(uint32_t o, uint16_t l, std::vector<Node *> b)
+      : Node(Kind::BLOCK, o, l), stmts(b) {}
+};
+
 // yet again the name already told it propose.
 // anyway is op as a char is really a good choice?
 // answer to question above: op as a char is ass cause I can't directly use
@@ -87,8 +107,6 @@ public:
 
   BinaryExpr(uint32_t o, uint16_t l, std::string op, Expr *lexpr, Expr *rexpr)
       : Expr(Kind::BINARY_EXPR, o, l), op(op), LExpr(lexpr), RExpr(rexpr) {}
-
-  ~BinaryExpr() {}
 };
 
 class UnaryExpr : public Expr {
@@ -112,7 +130,7 @@ public:
 
   Identifier(uint32_t o, uint16_t l, std::string n)
       : Expr(Kind::IDENTIFIER, o, l), name(n) {}
-  ~Identifier() {}
+  ~Identifier();
 };
 
 // why do I store in int64_t bruh.
@@ -145,22 +163,60 @@ public:
   ~FloatLiteral() {}
 };
 
-class VarDeclr : public Stmt {
+class ReturnStmt : public Stmt {
+private:
+  Expr *retExpr;
+
+public:
+  inline Expr *getExpr() { return retExpr; }
+  ReturnStmt(uint32_t o, uint16_t l, Expr *e)
+      : Stmt(Kind::RETURN_STMT, o, l), retExpr(e) {}
+};
+
+class VarDeclr : public Declr {
 private:
   Type type;
   Identifier *ident;
-  Expr
-      *whatShouldInameIt; // What should I name this variable???? English 2 / 10
+  Expr *initExpr; // What should I name this variable???? English 2 / 10
 
 public:
   inline Type getType() { return type; }
   inline Identifier *getIdentifier() { return ident; }
-  inline Expr *getExpr() { return whatShouldInameIt; }
+  inline Expr *getExpr() { return initExpr; }
 
   VarDeclr(uint32_t o, uint16_t l, Type t, Identifier *i, Expr *init)
-      : Stmt(Kind::VAR_DECLR, o, l), type(t), ident(i),
-        whatShouldInameIt(init) {}
-  ~VarDeclr() {}
+      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i), initExpr(init) {}
+};
+
+class ParamDeclr : public Declr {
+private:
+  Type type;
+  Identifier *ident;
+
+public:
+  inline Type getType() { return type; }
+  inline Identifier *getIdentifier() { return ident; }
+  ParamDeclr(uint32_t o, uint16_t l, Type t, Identifier *i)
+      : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(i) {}
+};
+
+class FuncDeclr : public Declr {
+private:
+  Identifier *name;
+  std::vector<Declr *> params;
+  Type returnType;
+  Block *block;
+
+public:
+  inline Identifier *getName() { return name; }
+  inline std::vector<Declr *> &getParams() { return params; }
+  inline Type getReturnType() { return returnType; }
+  inline Block *getBlock() { return block; }
+
+  FuncDeclr(uint32_t o, uint16_t l, Identifier *name,
+            std::vector<Declr *> params, Type returnType, Block *block)
+      : Declr(Kind::FUNC_DECLR, o, l), name(name), params(params),
+        returnType(returnType), block(block) {}
 };
 
 class ErrorStmt : public Stmt {
@@ -181,6 +237,16 @@ public:
   inline std::string getMessage() { return msg; }
   ErrorExpr(uint32_t o, uint16_t l, std::string msg)
       : Expr(Kind::ERROR_EXPR, o, l), msg(msg) {}
+};
+
+class ErrorDeclr : public Declr {
+private:
+  std::string msg;
+
+public:
+  inline std::string getMessage() { return msg; }
+  ErrorDeclr(uint32_t o, uint16_t l, std::string msg)
+      : Declr(Kind::ERROR_DECLR, o, l), msg(msg) {}
 };
 
 } // namespace KIWI::AST
