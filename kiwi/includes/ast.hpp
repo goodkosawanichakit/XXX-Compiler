@@ -17,6 +17,7 @@ enum class Kind {
   INT_LITERAL,
   FLOAT_LITERAL,
   RETURN_STMT,
+  ASSIGN_STMT,
   VAR_DECLR,
   PARAM_DECLR,
   FUNC_DECLR,
@@ -173,11 +174,23 @@ public:
       : Stmt(Kind::RETURN_STMT, o, l), retExpr(e) {}
 };
 
+class AssignStmt : public Stmt {
+private:
+  Identifier *ident;
+  Expr *expr;
+
+public:
+  inline Identifier *getIdent() { return ident; }
+  inline Expr *getExpr() { return expr; }
+  AssignStmt(uint32_t o, uint16_t l, Identifier *i, Expr *e)
+      : Stmt(Kind::ASSIGN_STMT, o, l), ident(i), expr(e) {}
+};
+
 class VarDeclr : public Declr {
 private:
   Type type;
   Identifier *ident;
-  Expr *initExpr; // What should I name this variable???? English 2 / 10
+  Expr *initExpr;
 
 public:
   inline Type getType() { return type; }

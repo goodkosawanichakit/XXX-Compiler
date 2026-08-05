@@ -19,6 +19,8 @@ std::string matchEnumKind(KIWI::AST::Kind k) {
     return "FLOAT_LITERAL";
   case KIWI::AST::Kind::RETURN_STMT:
     return "RETURN_STMT";
+  case KIWI::AST::Kind::ASSIGN_STMT:
+    return "ASSIGN_STMT";
   case KIWI::AST::Kind::VAR_DECLR:
     return "VAR_DECLR";
   case KIWI::AST::Kind::PARAM_DECLR:
@@ -159,6 +161,9 @@ void KIWI::AST::Dumper::dumpBlockItems(Node *node, int d) {
   case Kind::RETURN_STMT:
     dumpRet((ReturnStmt *)node, d);
     break;
+  case Kind::ASSIGN_STMT:
+    dumpAssign((AssignStmt *)node, d);
+    break;
   default:
     dumpErrorStmt((ErrorStmt *)node, d);
   }
@@ -169,6 +174,15 @@ void KIWI::AST::Dumper::dumpRet(ReturnStmt *node, int d) {
     return;
   std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind())
             << " Value: " << std::endl;
+  dumpExpr(node->getExpr(), d + 1);
+}
+
+void KIWI::AST::Dumper::dumpAssign(AssignStmt *node, int d) {
+  if (!node)
+    return;
+
+  std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind()) << ' ';
+  dumpIdent(node->getIdent(), d);
   dumpExpr(node->getExpr(), d + 1);
 }
 

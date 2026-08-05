@@ -26,6 +26,7 @@ private:
   AST::Block *parseBlock();
   AST::Node *parseBlockItems();
   AST::Stmt *parseRet();
+  AST::Stmt *parseAssign();
   AST::Expr *parseExpr(int b);
   AST::Expr *parseGroupExpr();
   AST::Expr *parseUnaryExpr();

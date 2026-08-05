@@ -175,7 +175,7 @@ KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
   case TokenType::IDENTIFIER:
-    // parseAssign:
+    return parseAssign();
   case TokenType::KW_RETURN:
     return parseRet();
   default:
@@ -200,6 +200,22 @@ KIWI::AST::Stmt *KIWI::Parser::parseRet() {
     return nullptr;
 
   return new AST::ReturnStmt(o, l, e);
+}
+
+KIWI::AST::Stmt *KIWI::Parser::parseAssign() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+
+  AST::Identifier *ident = parseIdent();
+
+  if (!expect(TokenType::EQUAL))
+    return nullptr;
+  AST::Expr *expr = parseExpr(0);
+
+  if (!expect(TokenType::SEMICOLON))
+    return nullptr;
+
+  return new AST::AssignStmt(o, l, ident, expr);
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
