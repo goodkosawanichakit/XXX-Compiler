@@ -4,6 +4,7 @@
 #include "scanner.hpp"
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 int main(int argc, char *argv[]) {
@@ -23,10 +24,10 @@ int main(int argc, char *argv[]) {
   KIWI::Scanner scanner(source);
   KIWI::Parser parser(scanner, source);
 
-  KIWI::AST::Forest *module = parser.parse();
+  std::unique_ptr<KIWI::AST::Forest> module = parser.parse();
 
   KIWI::AST::Dumper dumper(scanner.getLineOffset());
-  dumper.dump(module);
+  dumper.dump(module.get());
   std::cout << std::endl;
 
   return 0;

@@ -12,15 +12,15 @@ Declr      = VarDeclr
            ;
 
 VarDeclr   = type IDENTIFIER ("=" Expr)? ";" ;
-FuncDeclr  = "fn" IDENTIFIER "(" params? ")" "->" type block ; (* WIP *)
-params     = type IDENTIFIER ("," type IDENTIFIER)* ; (* WIP *)
+FuncDeclr  = "fn" IDENTIFIER "(" params? ")" "->" type block ;
+params     = type IDENTIFIER ("," type IDENTIFIER)* ;
 
 (* Statements *)
-block      = "{" (decl | stmt)* "}" ; (* WIP *)
+block      = "{" (decl | stmt)* "}" ;
 
-stmt       = returnStmt | assign ; (* WIP *)
-assign     = IDENTIFIER "=" expr ";" ; (* WIP *) 
-returnStmt = "return" expr ";" ; (* WIP *)
+stmt       = returnStmt | assign ; 
+assign     = IDENTIFIER "=" expr ";" ;
+returnStmt = "return" expr ";" ;
 
 (* Expressions *)
 expr       = unary (OP unary)* ;

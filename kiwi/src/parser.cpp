@@ -3,6 +3,7 @@
 #include "scanner.hpp"
 #include "token.hpp"
 #include <cstdint>
+#include <memory>
 #include <string>
 
 void KIWI::Parser::advance() {
@@ -58,15 +59,15 @@ void KIWI::Parser::panic() {
     advance();
 }
 
-KIWI::AST::Forest *KIWI::Parser::parse() {
-  AST::Forest *module = new AST::Forest();
+std::unique_ptr<KIWI::AST::Forest> KIWI::Parser::parse() {
+  std::unique_ptr<AST::Forest> module = std::make_unique<AST::Forest>();
   while (!match(TokenType::TOKEN_EOF)) {
     module->vec.push_back(parseDeclr());
   }
   return module;
 }
 
-KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
+std::unique_ptr<KIWI::AST::Declr> KIWI::Parser::parseDeclr() {
   switch (currentToken.type) {
   case TokenType::KW_INT8:
   case TokenType::KW_INT16:
@@ -81,7 +82,7 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
     return parseFuncDeclr();
   default:
     advance();
-    return new AST::ErrorDeclr(
+    return std::make_unique<AST::ErrorDeclr>(
         previousToken.offset, previousToken.length,
         "Unknown keyword at -> " +
             source.substr(previousToken.offset, currentToken.offset +
@@ -90,18 +91,19 @@ KIWI::AST::Declr *KIWI::Parser::parseDeclr() {
   }
 }
 
-KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
+std::unique_ptr<KIWI::AST::Declr> KIWI::Parser::parseFuncDeclr() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
   advance();
 
-  AST::Identifier *ident = parseIdent();
+  std::unique_ptr<AST::Identifier> ident = parseIdent();
 
+  // TODO: Return a proper Error message
   if (!expect(TokenType::LEFT_PAREN)) {
     return nullptr;
   }
 
-  std::vector<AST::Declr *> params;
+  std::vector<std::unique_ptr<AST::Declr>> params;
   params = parseParams();
 
   if (!expect(TokenType::RIGHT_PAREN)) {
@@ -114,13 +116,14 @@ KIWI::AST::Declr *KIWI::Parser::parseFuncDeclr() {
 
   AST::Type retType = parseType(currentToken.type);
 
-  AST::Block *block = parseBlock();
+  std::unique_ptr<AST::Block> block = parseBlock();
 
-  return new AST::FuncDeclr(o, l, ident, params, retType, block);
+  return std::make_unique<AST::FuncDeclr>(
+      o, l, std::move(ident), std::move(params), retType, std::move(block));
 }
 
-std::vector<KIWI::AST::Declr *> KIWI::Parser::parseParams() {
-  std::vector<AST::Declr *> params;
+std::vector<std::unique_ptr<KIWI::AST::Declr>> KIWI::Parser::parseParams() {
+  std::vector<std::unique_ptr<KIWI::AST::Declr>> params;
   while (!match(TokenType::RIGHT_PAREN) && !match(TokenType::TOKEN_EOF)) {
     params.push_back(parseParam());
     if (!match(TokenType::COMMA))
@@ -130,18 +133,18 @@ std::vector<KIWI::AST::Declr *> KIWI::Parser::parseParams() {
   return params;
 }
 
-KIWI::AST::Declr *KIWI::Parser::parseParam() {
+std::unique_ptr<KIWI::AST::Declr> KIWI::Parser::parseParam() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
 
   AST::Type t = parseType(currentToken.type);
 
-  AST::Identifier *ident = parseIdent();
+  std::unique_ptr<AST::Identifier> ident = parseIdent();
 
-  return new AST::ParamDeclr(o, l, t, ident);
+  return std::make_unique<AST::ParamDeclr>(o, l, t, std::move(ident));
 }
 
-KIWI::AST::Block *KIWI::Parser::parseBlock() {
+std::unique_ptr<KIWI::AST::Block> KIWI::Parser::parseBlock() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
 
@@ -149,7 +152,7 @@ KIWI::AST::Block *KIWI::Parser::parseBlock() {
     return nullptr;
   }
 
-  std::vector<AST::Node *> stmts;
+  std::vector<std::unique_ptr<AST::Node>> stmts;
 
   while (!match(TokenType::RIGHT_BRACE) && !match(TokenType::TOKEN_EOF)) {
     stmts.push_back(parseBlockItems());
@@ -160,10 +163,10 @@ KIWI::AST::Block *KIWI::Parser::parseBlock() {
     return nullptr;
   }
 
-  return new AST::Block(o, l, stmts);
+  return std::make_unique<AST::Block>(o, l, std::move(stmts));
 }
 
-KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
+std::unique_ptr<KIWI::AST::Node> KIWI::Parser::parseBlockItems() {
   switch (currentToken.type) {
   case TokenType::KW_INT8:
   case TokenType::KW_INT16:
@@ -175,12 +178,12 @@ KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
   case TokenType::KW_FLOAT64:
     return parseVarDeclr();
   case TokenType::IDENTIFIER:
-    // parseAssign:
+    return parseAssign();
   case TokenType::KW_RETURN:
     return parseRet();
   default:
     advance();
-    return new AST::ErrorDeclr(
+    return std::make_unique<AST::ErrorDeclr>(
         previousToken.offset, previousToken.length,
         "Unknown keyword at -> " +
             source.substr(previousToken.offset, currentToken.offset +
@@ -189,52 +192,72 @@ KIWI::AST::Node *KIWI::Parser::parseBlockItems() {
   }
 }
 
-KIWI::AST::Stmt *KIWI::Parser::parseRet() {
+std::unique_ptr<KIWI::AST::Stmt> KIWI::Parser::parseRet() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
   advance();
 
-  AST::Expr *e = parseExpr(0);
+  std::unique_ptr<AST::Expr> e = parseExpr(0);
 
   if (!expect(TokenType::SEMICOLON))
     return nullptr;
 
-  return new AST::ReturnStmt(o, l, e);
+  return std::make_unique<AST::ReturnStmt>(o, l, std::move(e));
+}
+
+std::unique_ptr<KIWI::AST::Stmt> KIWI::Parser::parseAssign() {
+  uint32_t o = currentToken.offset;
+  uint16_t l = currentToken.length;
+
+  std::unique_ptr<AST::Identifier> ident = parseIdent();
+
+  if (!expect(TokenType::EQUAL))
+    return nullptr;
+
+  std::unique_ptr<AST::Expr> expr = parseExpr(0);
+
+  if (!expect(TokenType::SEMICOLON))
+    return nullptr;
+
+  return std::make_unique<AST::AssignStmt>(o, l, std::move(ident),
+                                           std::move(expr));
 }
 
 // VarDeclr = type identifiers "="  (Expr | BinaryExpr) ";"
-KIWI::AST::Declr *KIWI::Parser::parseVarDeclr() {
+std::unique_ptr<KIWI::AST::Declr> KIWI::Parser::parseVarDeclr() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
   AST::Type t = parseType(currentToken.type);
 
-  AST::Identifier *ident = parseIdent();
+  std::unique_ptr<AST::Identifier> ident = parseIdent();
 
   if (!match(TokenType::EQUAL)) {
     if (!expect(TokenType::SEMICOLON)) {
-      return new AST::ErrorDeclr(
+      return std::make_unique<AST::ErrorDeclr>(
           o, l,
           "You forget to add ';' at the end of this -> " +
               source.substr(o,
                             previousToken.offset + previousToken.length - o));
     }
-    return new AST::VarDeclr(o, l, t, ident, nullptr);
+    return std::make_unique<AST::VarDeclr>(o, l, t, std::move(ident), nullptr);
   }
   advance();
 
-  KIWI::AST::Expr *value = parseExpr(0);
+  std::unique_ptr<AST::Expr> value = parseExpr(0);
 
   if (value->getKind() == AST::Kind::ERROR_EXPR)
-    return new AST::VarDeclr(o, l, t, ident, value);
+    return std::make_unique<AST::VarDeclr>(o, l, t, std::move(ident),
+                                           std::move(value));
 
   if (!expect(TokenType::SEMICOLON)) {
-    return new AST::ErrorDeclr(
+    return std::make_unique<AST::ErrorDeclr>(
         o, l,
         "You forget to add ';' at the end of this -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
   }
 
-  return new AST::VarDeclr(o, l, t, ident, value);
+  return std::make_unique<AST::VarDeclr>(o, l, t, std::move(ident),
+                                         std::move(value));
 }
 
 int KIWI::Parser::getBindingPower(KIWI::TokenType t) {
@@ -255,25 +278,26 @@ int KIWI::Parser::getBindingPower(KIWI::TokenType t) {
 // BinaryExpr = Expr "OP" Expr
 // Expr = IntLiteral | FloatLiteral | BinaryExpr | ...
 // b is for binding power in case I forget it.
-KIWI::AST::Expr *KIWI::Parser::parseExpr(int b) {
-  AST::Expr *left = parseLiteral();
+std::unique_ptr<KIWI::AST::Expr> KIWI::Parser::parseExpr(int b) {
+  std::unique_ptr<AST::Expr> left = parseLiteral();
   while (b < getBindingPower(currentToken.type)) {
     uint32_t o = currentToken.offset;
     uint16_t l = currentToken.length;
     std::string op = source.substr(currentToken.offset, currentToken.length);
     int currB = getBindingPower(currentToken.type);
     advance();
-    AST::Expr *right = parseExpr(currB);
+    std::unique_ptr<AST::Expr> right = parseExpr(currB);
     if (right->getKind() == AST::Kind::ERROR_EXPR)
       return right;
-    left = new AST::BinaryExpr(o, l, op, left, right);
+    left = std::make_unique<AST::BinaryExpr>(o, l, op, std::move(left),
+                                             std::move(right));
   }
   return left;
 }
 
-KIWI::AST::Expr *KIWI::Parser::parseGroupExpr() {
+std::unique_ptr<KIWI::AST::Expr> KIWI::Parser::parseGroupExpr() {
   advance();
-  AST::Expr *e = parseExpr(0);
+  std::unique_ptr<AST::Expr> e = parseExpr(0);
 
   if (e->getKind() == AST::Kind::ERROR_EXPR)
     return e;
@@ -281,28 +305,27 @@ KIWI::AST::Expr *KIWI::Parser::parseGroupExpr() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
 
-  if (!expect(TokenType::RIGHT_PAREN)) {
-    return new AST::ErrorExpr(
+  if (!expect(TokenType::RIGHT_PAREN))
+    return std::make_unique<AST::ErrorExpr>(
         o, l,
         "Expected ')' at -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
-  }
 
   return e;
 }
 
-KIWI::AST::Expr *KIWI::Parser::parseUnaryExpr() {
+std::unique_ptr<KIWI::AST::Expr> KIWI::Parser::parseUnaryExpr() {
   uint32_t o = currentToken.offset;
   uint16_t l = currentToken.length;
   std::string op = source.substr(currentToken.offset, currentToken.length);
   advance();
-  AST::Expr *expr = parseExpr(50);
+  std::unique_ptr<AST::Expr> expr = parseExpr(50);
   if (expr->getKind() == AST::Kind::ERROR_EXPR)
     return expr;
-  return new AST::UnaryExpr(o, l, op, expr);
+  return std::make_unique<AST::UnaryExpr>(o, l, op, std::move(expr));
 }
 
-KIWI::AST::Expr *KIWI::Parser::parseLiteral() {
+std::unique_ptr<KIWI::AST::Expr> KIWI::Parser::parseLiteral() {
   switch (currentToken.type) {
   case TokenType::MINUS:
     return parseUnaryExpr();
@@ -318,30 +341,30 @@ KIWI::AST::Expr *KIWI::Parser::parseLiteral() {
     uint32_t o = currentToken.offset;
     uint16_t l = currentToken.length;
     panic();
-    return new AST::ErrorExpr(
+    return std::make_unique<AST::ErrorExpr>(
         o, l,
         "Expected Expression at -> " +
             source.substr(o, previousToken.offset + previousToken.length - o));
   }
 }
 
-KIWI::AST::Identifier *KIWI::Parser::parseIdent() {
+std::unique_ptr<KIWI::AST::Identifier> KIWI::Parser::parseIdent() {
   advance();
-  return new AST::Identifier(
+  return std::make_unique<AST::Identifier>(
       previousToken.offset, previousToken.length,
       source.substr(previousToken.offset, previousToken.length));
 }
 
-KIWI::AST::IntLiteral *KIWI::Parser::parseIntLiteral() {
+std::unique_ptr<KIWI::AST::IntLiteral> KIWI::Parser::parseIntLiteral() {
   advance();
-  return new AST::IntLiteral(
+  return std::make_unique<AST::IntLiteral>(
       previousToken.offset, previousToken.length,
       std::stoll(source.substr(previousToken.offset, previousToken.length)));
 }
 
-KIWI::AST::FloatLiteral *KIWI::Parser::parseFloatLiteral() {
+std::unique_ptr<KIWI::AST::FloatLiteral> KIWI::Parser::parseFloatLiteral() {
   advance();
-  return new AST::FloatLiteral(
+  return std::make_unique<AST::FloatLiteral>(
       previousToken.offset, previousToken.length,
       std::stod(source.substr(previousToken.offset, previousToken.length)));
 }

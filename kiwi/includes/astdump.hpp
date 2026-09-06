@@ -20,6 +20,7 @@ private:
   void dumpFuncDeclr(FuncDeclr *node, int d);
   void dumpParamDeclr(ParamDeclr *node, int d);
   void dumpRet(ReturnStmt *node, int d);
+  void dumpAssign(AssignStmt *node, int d);
   void dumpBlock(Block *node, int d);
   void dumpBlockItems(Node *node, int d);
   uint32_t getLine(uint32_t of);
