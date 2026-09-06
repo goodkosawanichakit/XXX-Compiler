@@ -118,8 +118,8 @@ std::unique_ptr<KIWI::AST::Declr> KIWI::Parser::parseFuncDeclr() {
 
   std::unique_ptr<AST::Block> block = parseBlock();
 
-  return std::make_unique<AST::FuncDeclr>(o, l, std::move(ident), params,
-                                          retType, std::move(block));
+  return std::make_unique<AST::FuncDeclr>(
+      o, l, std::move(ident), std::move(params), retType, std::move(block));
 }
 
 std::vector<std::unique_ptr<KIWI::AST::Declr>> KIWI::Parser::parseParams() {
