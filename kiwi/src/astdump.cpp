@@ -1,6 +1,7 @@
 #include "astdump.hpp"
 #include "ast.hpp"
 #include <iostream>
+#include <memory>
 
 // TBH these two match function is llm generated cause I'm lazy.
 std::string matchEnumKind(KIWI::AST::Kind k) {
@@ -82,7 +83,7 @@ uint32_t KIWI::AST::Dumper::getLine(uint32_t of) {
 void KIWI::AST::Dumper::dump(KIWI::AST::Forest *module) {
   if (!module)
     return;
-  for (KIWI::AST::Node *node : module->vec) {
+  for (auto &node : module->vec) {
     if (!node) {
       std::cout << "TS ERROR na" << std::endl;
       continue;
@@ -90,15 +91,15 @@ void KIWI::AST::Dumper::dump(KIWI::AST::Forest *module) {
 
     switch (node->getKind()) {
     case Kind::VAR_DECLR:
-      dumpVarDeclr((VarDeclr *)node, 0);
+      dumpVarDeclr((VarDeclr *)node.get(), 0);
       break;
     case Kind::FUNC_DECLR:
-      dumpFuncDeclr((FuncDeclr *)node, 0);
+      dumpFuncDeclr((FuncDeclr *)node.get(), 0);
       break;
     default:
       // TODO: IDK what I need to handle in this deafult section.
       // so todo is I need to think what I'm gonna do
-      dumpErrorStmt((ErrorStmt *)node, 0);
+      dumpErrorStmt((ErrorStmt *)node.get(), 0);
     }
   }
 }
@@ -115,8 +116,8 @@ void KIWI::AST::Dumper::dumpFuncDeclr(FuncDeclr *node, int d) {
             << " ReturnType: " << matchEnumType(node->getReturnType())
             << std::endl;
 
-  for (Declr *param : node->getParams())
-    dumpParamDeclr((ParamDeclr *)param, d + 1);
+  for (auto &param : node->getParams())
+    dumpParamDeclr((ParamDeclr *)param.get(), d + 1);
 
   dumpBlock(node->getBlock(), d + 1);
 }
@@ -146,8 +147,8 @@ void KIWI::AST::Dumper::dumpBlock(Block *node, int d) {
   std::cout << std::string(d * 2, ' ') << matchEnumKind(node->getKind())
             << std::endl;
 
-  for (auto i : node->stmts)
-    dumpBlockItems(i, d + 1);
+  for (auto &i : node->stmts)
+    dumpBlockItems(i.get(), d + 1);
 }
 
 void KIWI::AST::Dumper::dumpBlockItems(Node *node, int d) {

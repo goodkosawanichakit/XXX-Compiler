@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
-
 namespace KIWI::AST {
 
 enum class Kind {
@@ -50,7 +50,7 @@ public:
   inline Kind getKind() { return kind; }
 
   Node(Kind k, uint32_t o, uint16_t l) : kind(k), offset(o), length(l) {}
-  ~Node() {}
+  virtual ~Node() {}
 };
 
 // AKA Module node, File node.
@@ -58,35 +58,32 @@ public:
 // many tree = forest
 class Forest {
 public:
-  std::vector<Node *> vec;
+  std::vector<std::unique_ptr<Node>> vec;
 };
 
 // Expr class and yeah the name already told it propose.
 class Expr : public Node {
 public:
   using Node::Node;
-  ~Expr() {}
 };
 
 // it's a statement duh.
 class Stmt : public Node {
 public:
   using Node::Node;
-  ~Stmt() {}
 };
 
 class Declr : public Node {
 public:
   using Node::Node;
-  ~Declr() {}
 };
 
 // It's just a Forest node but for a FuncDeclr and if else, loop
 class Block : public Node {
 public:
-  std::vector<Node *> stmts;
-  Block(uint32_t o, uint16_t l, std::vector<Node *> b)
-      : Node(Kind::BLOCK, o, l), stmts(b) {}
+  std::vector<std::unique_ptr<Node>> stmts;
+  Block(uint32_t o, uint16_t l, std::vector<std::unique_ptr<Node>> b)
+      : Node(Kind::BLOCK, o, l), stmts(std::move(b)) {}
 };
 
 // yet again the name already told it propose.
@@ -98,28 +95,30 @@ public:
 class BinaryExpr : public Expr {
 private:
   std::string op;
-  Expr *LExpr;
-  Expr *RExpr;
+  std::unique_ptr<Expr> LExpr;
+  std::unique_ptr<Expr> RExpr;
 
 public:
   inline std::string getOP() { return op; }
-  inline Expr *getLExpr() { return LExpr; }
-  inline Expr *getRExpr() { return RExpr; }
+  inline Expr *getLExpr() { return LExpr.get(); }
+  inline Expr *getRExpr() { return RExpr.get(); }
 
-  BinaryExpr(uint32_t o, uint16_t l, std::string op, Expr *lexpr, Expr *rexpr)
-      : Expr(Kind::BINARY_EXPR, o, l), op(op), LExpr(lexpr), RExpr(rexpr) {}
+  BinaryExpr(uint32_t o, uint16_t l, std::string op,
+             std::unique_ptr<Expr> lexpr, std::unique_ptr<Expr> rexpr)
+      : Expr(Kind::BINARY_EXPR, o, l), op(op), LExpr(std::move(lexpr)),
+        RExpr(std::move(rexpr)) {}
 };
 
 class UnaryExpr : public Expr {
 private:
   std::string op;
-  Expr *expr;
+  std::unique_ptr<Expr> expr;
 
 public:
   inline std::string getOP() { return op; }
-  inline Expr *getExpr() { return expr; }
-  UnaryExpr(uint32_t o, uint16_t l, std::string op, Expr *expr)
-      : Expr(Kind::UNARY_EXPR, o, l), op(op), expr(expr) {}
+  inline Expr *getExpr() { return expr.get(); }
+  UnaryExpr(uint32_t o, uint16_t l, std::string op, std::unique_ptr<Expr> expr)
+      : Expr(Kind::UNARY_EXPR, o, l), op(op), expr(std::move(expr)) {}
 };
 
 class Identifier : public Expr {
@@ -131,7 +130,6 @@ public:
 
   Identifier(uint32_t o, uint16_t l, std::string n)
       : Expr(Kind::IDENTIFIER, o, l), name(n) {}
-  ~Identifier();
 };
 
 // why do I store in int64_t bruh.
@@ -147,8 +145,6 @@ public:
 
   IntLiteral(uint32_t o, uint16_t l, int64_t v)
       : Expr(Kind::INT_LITERAL, o, l), value(v) {}
-
-  ~IntLiteral() {}
 };
 
 class FloatLiteral : public Expr {
@@ -160,76 +156,80 @@ public:
 
   FloatLiteral(uint32_t o, uint16_t l, double v)
       : Expr(Kind::FLOAT_LITERAL, o, l), value(v) {}
-
-  ~FloatLiteral() {}
 };
 
 class ReturnStmt : public Stmt {
 private:
-  Expr *retExpr;
+  std::unique_ptr<Expr> retExpr;
 
 public:
-  inline Expr *getExpr() { return retExpr; }
-  ReturnStmt(uint32_t o, uint16_t l, Expr *e)
-      : Stmt(Kind::RETURN_STMT, o, l), retExpr(e) {}
+  inline Expr *getExpr() { return retExpr.get(); }
+  ReturnStmt(uint32_t o, uint16_t l, std::unique_ptr<Expr> e)
+      : Stmt(Kind::RETURN_STMT, o, l), retExpr(std::move(e)) {}
 };
 
 class AssignStmt : public Stmt {
 private:
-  Identifier *ident;
-  Expr *expr;
+  std::unique_ptr<Identifier> ident;
+  std::unique_ptr<Expr> expr;
 
 public:
-  inline Identifier *getIdent() { return ident; }
-  inline Expr *getExpr() { return expr; }
-  AssignStmt(uint32_t o, uint16_t l, Identifier *i, Expr *e)
-      : Stmt(Kind::ASSIGN_STMT, o, l), ident(i), expr(e) {}
+  inline Identifier *getIdent() { return ident.get(); }
+  inline Expr *getExpr() { return expr.get(); }
+  AssignStmt(uint32_t o, uint16_t l, std::unique_ptr<Identifier> i,
+             std::unique_ptr<Expr> e)
+      : Stmt(Kind::ASSIGN_STMT, o, l), ident(std::move(i)), expr(std::move(e)) {
+  }
 };
 
 class VarDeclr : public Declr {
 private:
   Type type;
-  Identifier *ident;
-  Expr *initExpr;
+  std::unique_ptr<Identifier> ident;
+  std::unique_ptr<Expr> initExpr;
 
 public:
   inline Type getType() { return type; }
-  inline Identifier *getIdentifier() { return ident; }
-  inline Expr *getExpr() { return initExpr; }
+  inline Identifier *getIdentifier() { return ident.get(); }
+  inline Expr *getExpr() { return initExpr.get(); }
 
-  VarDeclr(uint32_t o, uint16_t l, Type t, Identifier *i, Expr *init)
-      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(i), initExpr(init) {}
+  VarDeclr(uint32_t o, uint16_t l, Type t, std::unique_ptr<Identifier> i,
+           std::unique_ptr<Expr> init)
+      : Declr(Kind::VAR_DECLR, o, l), type(t), ident(std::move(i)),
+        initExpr(std::move(init)) {}
 };
 
 class ParamDeclr : public Declr {
 private:
   Type type;
-  Identifier *ident;
+  std::unique_ptr<Identifier> ident;
 
 public:
   inline Type getType() { return type; }
-  inline Identifier *getIdentifier() { return ident; }
-  ParamDeclr(uint32_t o, uint16_t l, Type t, Identifier *i)
-      : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(i) {}
+  inline Identifier *getIdentifier() { return ident.get(); }
+  ParamDeclr(uint32_t o, uint16_t l, Type t, std::unique_ptr<Identifier> i)
+      : Declr(Kind::PARAM_DECLR, o, l), type(t), ident(std::move(i)) {}
 };
 
 class FuncDeclr : public Declr {
 private:
-  Identifier *name;
-  std::vector<Declr *> params;
+  std::unique_ptr<Identifier> name;
+  std::vector<std::unique_ptr<Declr>> params;
   Type returnType;
-  Block *block;
+  std::unique_ptr<Block> block;
 
 public:
-  inline Identifier *getName() { return name; }
-  inline std::vector<Declr *> &getParams() { return params; }
+  inline Identifier *getName() { return name.get(); }
+  inline std::vector<std::unique_ptr<Declr>> &getParams() { return params; }
   inline Type getReturnType() { return returnType; }
-  inline Block *getBlock() { return block; }
+  inline Block *getBlock() { return block.get(); }
 
-  FuncDeclr(uint32_t o, uint16_t l, Identifier *name,
-            std::vector<Declr *> params, Type returnType, Block *block)
-      : Declr(Kind::FUNC_DECLR, o, l), name(name), params(params),
-        returnType(returnType), block(block) {}
+  FuncDeclr(uint32_t o, uint16_t l, std::unique_ptr<Identifier> name,
+            std::vector<std::unique_ptr<Declr>> params, Type returnType,
+            std::unique_ptr<Block> block)
+      : Declr(Kind::FUNC_DECLR, o, l), name(std::move(name)),
+        params(std::move(params)), returnType(returnType),
+        block(std::move(block)) {}
 };
 
 class ErrorStmt : public Stmt {
